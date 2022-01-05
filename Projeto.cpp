@@ -19,7 +19,7 @@
 //        se for falso, retornar -1, indicando que o código não exixte (foi deletado)
 
 struct Cliente{
-       char id[5], nome[30], cidade[20], UF[3], ident[25];  
+       char id[5], nome[30], cidade[30], UF[3], ident[25];  
        bool status;
 };
 struct Parcela{
@@ -35,6 +35,9 @@ char tmp[200], tmp2[30]; //tmp2 é só para eu não ter que apagar o lixo de memori
 int qtLinhas, qtLinhasParc, qtLinhasCli, ref;        
 int tecla;
 bool flagCli, flagParc;
+int enter, timerMenu;
+int idBanco[15];
+char nomeBanco [20][15];
 
 struct Cliente cadastro[SIZE_CAD];
 struct Parcela registro[SIZE_CAD];
@@ -45,11 +48,12 @@ struct Parcela registro[SIZE_CAD];
 void mostrarCadastro (char descricao[50]); //FALRA LISTAR TODOS, SEM SELECIONAR CIDADE.
 void menuParcela ();
 void mostrarParcela (char opMenu[15]);
+void deletarParcela ();
 
 void menuPrincipal ();
 /*Feito*/void leArquivo(char nomeArq[15]);
 /*Feito*/void dadosImp (int tipo, bool flag);
-/*Feito*/void apresenta(char menu[50]);
+/*Feito*/void apresenta(char legenda[50], char menu[50]);
 /*Feito*/void apresenta2(char menu[50]);
 /*Feito*/void salvaCliente ();
 /*Feito*/void salvaParcela ();
@@ -64,10 +68,10 @@ void menuPrincipal ();
 /*Feito*/void mudarCliente ();
 /*Feito*/void cadastrarCliente ();
 /*Feito*/void maiusc (char palavra[30]);
-/*Feito*//*Feito*//*Feito*//*Feito*//*Feito*/void deletarCliente ();
+bool deletarCliente (char cod[5]);
+void menuDeletarCliente ();
 /*Feito*/int buscaBinaria (char pesquisa[5], int tipo);
 int buscaBinariaIdCli (char pesquisa[5], int tipo);
-/*Feito*/void valCliPar ();
 /*Feito*/void addParcela ();
 /*Feito*/void mudarParc ();
 void menuMudarPar (int q, int c);
@@ -76,7 +80,7 @@ void menuMudarPar (int q, int c);
 
 //void totalGeral ();
 //void menuResumidoPag (float a, float r, float t);
-void contaBanco ();
+void resumoBanco ();
 void receitaBancoCliente (int tipo);
 void menuReceita ();
 
@@ -93,9 +97,10 @@ int validaBanco (int bc);
 //-----------------------------PROGRAMA PRINCIPAL-----------------------------//
 int main (){
     setlocale(LC_ALL,"portuguese");
-    
+      
     flagCli = false; 
     flagParc = false;
+    timerMenu = 300;
     
     //menuPrincipal ();
     leArquivo ("CLIENTES.txt");
@@ -103,10 +108,13 @@ int main (){
     leArquivo ("PARCELAS.txt");
     salvaParcela ();
     
+    menuPrincipal ();
     
     //selectionVencPar ();
     
-    menuPrincipal ();
+     //menuDeletarCliente ();
+     
+     
     //personalizado ();
     
     //receitaBancoCliente (2);
@@ -140,18 +148,12 @@ void menuPrincipal (){
         printf ("  4  - Menu Receita\n");
         printf ("  0  - Créditos\n");
         printf (" ESC - Sair\n");
-        printf ("Escolha uma opção: ");
+        printf (" Escolha uma opção: ");
         op = getch ();
-        if (op-48==27) printf ("ESC");
-        if (op-48>=0 && op-48<5) printf ("%d",op-48);
-        
-        
-        Sleep (500);
-        //scanf ("%d", &op);
-    //}while (op[0] < '0' || op[0] > '5' && op[0]);
+        if (op-48>=0 && op-48<=9) printf ("%d",op-48);
+        Sleep (timerMenu);  
     }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 48 && op != 27);
-    //}while (op[0] !='1' && op[0] !='2' && op[0] !='3' && op[0] !='4' && op[0] !='0' && op[0] !='\0');
-
+    
     switch (op){
            case 49: 
                 menuCliente ();
@@ -169,16 +171,1091 @@ void menuPrincipal (){
            case 48:
                 creditos ();
                 printf ("<ENTER> para voltar MENU PRINCIPAL");
-                getch ();
+                do{ //VALIDA SE A PESSOA APERTOU ENTER
+                    fflush (stdin);
+                    enter = getch();
+                }while (enter != 13);
                 menuPrincipal ();
                 break;
            case 27:
                 break;
     }
 }
-
 //------------------------------------------------------------------------------
+void menuCliente (){
+     int op;
+     
+     do {
+         fflush (stdin);
+         system ("cls");
+         printf ("MENU CLIENTE\n\n");
+         printf ("  1  - Importar\n");
+         printf ("  2  - Mostrar Cadastros\n");
+         printf ("  3  - Adicionar\n");
+         printf ("  4  - Alterar\n");
+         printf ("  5  - Excluir\n");
+         printf (" ESC - Menu Principal\n");
+         printf (" Escolha um opção: ");
+         op = getch ();
+         if (op-48>=0 && op-48<=9) printf ("%d",op-48);  
+         Sleep (timerMenu);  
+    }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 53 && op != 27);
+     
+     switch (op){
+            case 49:
+                 if (flagCli){
+                    system ("cls");
+                    printf ("Dados dos Clientes já importados!!!\n");
+                    printf ("<ENTER> para voltar");
+                    do{ //VALIDA SE A PESSOA APERTOU ENTER
+                        fflush (stdin);
+                        enter = getch();
+                    }while (enter != 13);
+                    menuCliente (); 
+                 }
+                 leArquivo ("CLIENTES.txt");
+                 salvaCliente ();
+                 apresenta ("AGUARDE, IMPORTANDO...","Obrigado por esperar! <ENTER> voltar ao MENU CLIENTE");
+                 menuCliente ();
+                 break;
+            case 50:
+                 dadosImp (1, flagCli);
+                 mostrarCadastro ("<ENTER> para voltar ao MEU CLIENTE"); 
+                 menuCliente ();
+                 break;
+            case 51:
+                 dadosImp (1, flagCli);
+                 cadastrarCliente ();
+                 break;
+            case 52:
+                 dadosImp (1, flagCli);
+                 mudarCliente ();
+                 break;
+            case 53:
+                 dadosImp (1, flagCli);
+                 menuDeletarCliente ();
+                 break;
+            case 27:
+                 menuPrincipal ();
+                 break;                
+     }    
+}
+//------------------------------------------------------------------------------
+void mostrarCadastro (char descricao[50]){
+     char cidade[30], uf[3];
+     int ord;
+     int temp[qtLinhasCli];
+     int linha = 0;
+     int enter;
+     
+     system ("cls");
+     printf ("Lista de Clientes Cadastrados\n\n");
+     
+     fflush (stdin);
+     printf ("Cidade desejada (Enter para TODAS) : ");
+     gets (cidade);
+     maiusc (cidade); //PARA GRAVAR E PESQUISAR TUDO EM MAIUSCULO
+     strcpy (cidade, tmp2);
+     if (cidade[0] == '\0'){
+        system ("cls");
+        printf ("Lista de Clientes Cadastrados\n\n");
+        printf ("Cidade desejada (Enter para TODAS) : %s\n","TODOS");
+     }
+     
+     fflush (stdin);
+     printf ("UF desejada (Enter para TODOS)     : ");
+     gets (uf);
+     maiusc (uf); //PARA GRAVAR TUDO EM MAIUSCULO
+     strcpy (uf, tmp2);
+     if (uf[0] == '\0'){
+        system ("cls");
+        printf ("Lista de Clientes Cadastrados\n\n");
+        printf ("Cidade desejada (Enter para TODAS) : %s\n", "TODOS");
+        printf ("UF desejada (Enter para TODOS)     : %s\n",     "TODOS");
+     }
+     
+     do{
+        fflush (stdin);
+        printf ("Ordenação (1 - Nome | 2 - ID)      :   ");
+        scanf ("%d",&ord);
+     }while (ord != 1 && ord != 2);
+     
+     if (ord == 1){
+        selectionNome ();
+     }else{
+        selectionIdCliente ();
+     }     
+  
+     system ("cls");
+     for (int x=0; x<=qtLinhasCli; x++){
+         if (((strcmp(cidade, cadastro[x].cidade)==0  ) || (cidade[0] == '\0'))  &&  ((strcmp(uf, cadastro[x].UF)==0) || (uf[0] == '\0' ))){ 
+            if (linha == 0){
+               printf (" ID          Cliente                  Cidade              UF     RG/CPF/CNPJ\n");
+               printf ("------------------------------------------------------------------------------------\n");
+            }
+            if (cadastro[x].status == true){
+               printf("%4s | %20s | %25s | %2s | %19s |\n",cadastro[x].id, cadastro[x].nome, cadastro[x].cidade, cadastro[x].UF, cadastro[x].ident);
+               Sleep (20);
+               linha++;
+            }
+            if (linha == 25){
+               linha = 0;
+               fflush (stdin);
+               printf ("------------------------------------------------------------------------------------\n");
+               printf ("<Enter> para mostrar mais");
+               do{ //VALIDA SE A PESSOA APERTOU ENTER
+                   fflush (stdin);
+                   enter = getch();
+               }while (enter != 13);
+               system ("cls");
+            } 
+         }
+     }
+     if (linha > 0){
+        printf ("---------------------------------------------------------------------------------\n");
+        printf (descricao); //descricao (é o que aparece na última linha da última tela)
+        do{//VALIDA SE A PESSOA APERTOU ENTER
+           fflush (stdin);
+           enter = getch();
+        }while (enter != 13); 
+     }else{
+        if (cidade[0] == '\0') strcpy(cidade,"Todas");
+        printf ("---------------------------------------------------------------------\n");
+        printf (" Nenhum cliente encontrado:  Cidade:%20s  |  UF: %2s\n",cidade, uf);
+        printf ("---------------------------------------------------------------------\n");
+        do{//VALIDA SE A PESSOA APERTOU ENTER
+                 fflush (stdin);
+                 enter = getch();
+        }while (enter != 13);    
+     }                 
+}
+//------------------------------------------------------------------------------
+int menuMudarCli (int p) {
+     int op = -1;
+     do{
+        fflush (stdin);
+        system ("cls");
+        printf ("Alterar dados\n"); 
+        printf ("----------------------------------------\n");
+        printf ("      Cliente: %s\n", cadastro[p].nome);
+        printf ("       Cidade: %s\n", cadastro[p].cidade);
+        printf ("           UF: %s\n", cadastro[p].UF);
+        printf ("  RG/CPF/CNPJ: %s\n", cadastro[p].ident);
+        printf ("----------------------------------------\n");
+        printf ("  1  - Alterar Nome\n");
+        printf ("  2  - Alterar Cidade\n");
+        printf ("  3  - Alterar UF\n");
+        printf ("  4  - Alterar RG/CPF/CNPJ\n");
+        printf (" ESC - Menu Cliente\n");                                                //*********************
+        printf (" Escolha uma opção: ");
+        op = getch ();
+        if (op-48>=0 && op-48<=9) printf ("%d",op-48); 
+        Sleep (timerMenu);
+     }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 53 && op != 27);
+     return op;
+}
+//------------------------------------------------------------------------------
+void mudarCliente (){ 
+     int k, j;
+     char cod[5];
+     
+     system ("cls");
+     fflush (stdin);
+     printf ("Código do cliente a ser altualizado: ");
+     gets (cod);
+     qtLinhasCli++; //Por conta da forma que está implementado validaID
+     k = validaID(cod);
+     qtLinhasCli--;
+     
+     if (k != -1){
+        do{
+           j=0;
+           j = menuMudarCli (k);
+           if (j == 49){
+            fflush(stdin);
+            printf ("\nNovo Nome: ");
+            gets (cadastro[k].nome);
+            maiusc (cadastro[k].nome);      //PARA GRAVAR TUDO EM MAIUSCULO
+            strcpy (cadastro[k].nome, tmp2);
+           }
+           if (j == 50){
+            fflush(stdin);
+            printf ("\nNova Cidade: ");
+            gets (cadastro[k].cidade);
+            maiusc (cadastro[k].cidade);      //PARA GRAVAR TUDO EM MAIUSCULO
+            strcpy (cadastro[k].cidade, tmp2);
+           }
+           if (j == 51){
+            fflush(stdin);
+            printf ("\nNovo UF: ");
+            gets (cadastro[k].UF);
+            maiusc (cadastro[k].UF);      //PARA GRAVAR TUDO EM MAIUSCULO
+            strcpy (cadastro[k].UF, tmp2);  
+           }
+           if (j == 52){
+            fflush(stdin);
+            printf ("\nRG/CPF/CNPJ: ");
+            gets (cadastro[k].ident); 
+            maiusc (cadastro[k].ident);      //PARA GRAVAR TUDO EM MAIUSCULO
+            strcpy (cadastro[k].ident, tmp2);
+           }
+           if (j ==27){
+              menuCliente ();
+           }
+        }while(j != 27);
+             
+     }
+     else{
+       printf ("Cliente não cadastrado!!!\n"); 
+       printf ("<ENTER> para voltar (MENU CLIENTE)");  
+       do{ //VALIDA SE A PESSOA APERTOU ENTER
+          fflush (stdin);
+          enter = getch();
+       }while (enter != 13);
+       menuCliente ();
+     }
+     /*printf ("%s\n",cadastro[k].id);
+     printf ("%s\n",cadastro[k].nome);
+     printf ("%s\n",cadastro[k].cidade);
+     printf ("%s\n",cadastro[k].UF);
+     printf ("%s\n",cadastro[k].ident);
+     system ("pause");*/
+}
+//------------------------------------------------------------------------------
+void cadastrarCliente (){
+     int k = -10;
+     
+     qtLinhasCli++;
+     system ("cls");
+     printf ("Cadastrar NOVO Cliente\n");
+     while (k != -1){
+           fflush (stdin);
+           printf ("Código: ");
+           gets (cadastro[qtLinhasCli].id);
+           k = validaID (cadastro[qtLinhasCli].id);
+           if (k != -1) printf ("Código já cadastrado!!!\n");
+     }
+     fflush (stdin);
+     printf ("Nome: ");
+     gets (cadastro[qtLinhasCli].nome);
+     maiusc (cadastro[qtLinhasCli].nome); //PARA GRAVAR TUDO EM MAIUSCULO
+     strcpy (cadastro[qtLinhasCli].nome, tmp2);
+     
+     fflush (stdin);
+     printf ("Cidade: ");
+     gets (cadastro[qtLinhasCli].cidade);
+     maiusc (cadastro[qtLinhasCli].cidade); //PARA GRAVAR TUDO EM MAIUSCULO
+     strcpy (cadastro[qtLinhasCli].cidade, tmp2);
+     
+     fflush (stdin);    
+     printf ("UF: ");
+     gets (cadastro[qtLinhasCli].UF);
+     maiusc (cadastro[qtLinhasCli].UF); //PARA GRAVAR TUDO EM MAIUSCULO
+     strcpy (cadastro[qtLinhasCli].UF, tmp2);
+     
+     fflush (stdin);    
+     printf ("RG/CPF/CNPJ: ");
+     gets (cadastro[qtLinhasCli].ident);
+     maiusc (cadastro[qtLinhasCli].ident); //PARA GRAVAR TUDO EM MAIUSCULO
+     strcpy (cadastro[qtLinhasCli].ident, tmp2);
+     
+     cadastro[qtLinhasCli].status = true;
+     
+     /*
+     printf ("%d",qtLinhasCli);
+     printf ("%s\n",cadastro[qtLinhasCli].id);
+     printf ("%s\n",cadastro[qtLinhasCli].nome);
+     printf ("%s\n",cadastro[qtLinhasCli].cidade);
+     printf ("%s\n",cadastro[qtLinhasCli].UF);
+     printf ("%s\n",cadastro[qtLinhasCli].ident);
+     */
+     printf ("\nCadastro realizado!!!\n");
+     printf ("<ENTER> para voltar ao MENU CLIENTE");
+     do{ //VALIDA SE A PESSOA APERTOU ENTER
+        fflush (stdin);
+        enter = getch();
+     }while (enter != 13);
+     menuCliente ();
+}
+//------------------------------------------------------------------------------ 
+void menuDeletarCliente (){
+     char codigo[5];
+     int k = -100;
+     bool flag;
+     
+     system ("cls");
+     qtLinhasCli++; //Sem isso, não pega o último código do cliente
+     do{
+        system ("cls");
+        printf ("Deletar Cliente\n\n");
+        fflush (stdin);
+        printf ("Código do Cliente: ");
+        gets (codigo);
+        k = validaID (codigo);
+        if (k == -1){
+           fflush (stdin);
+           printf ("Cliente não cadastrado.\n");
+           printf ("<ENTER> para tentar novamente.");
+           do
+             enter = getch();
+           while (enter != 13);
+        } 
+     }while (k == -1);
+     qtLinhasCli--; //Para voltar o vetor ao normal. 
+     
+     flag = true;
+     flag = deletarCliente (codigo);
+     
+     if (flag){
+        cadastro[k].status = false;
+        
+        for (int i=0; i<=qtLinhasParc; i++){
+            if ((strcmp(codigo, registro[i].idCli)==0))
+               registro[i].st = false;
+        }
+        system ("cls");
+        printf ("Deletar Cliente\n\n");
+        printf ("Código: %s\n",cadastro[k].id);
+        printf ("Cliente: %s deletado.\n\n",cadastro[k].nome);
+        printf ("<ENTER> para voltar ao MENU CLIENTE");
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+        }while (enter != 13);
+        menuCliente ();   
+     }
+     else{
+        system ("cls");
+        printf ("Deletar Cliente\n\n");
+        printf ("Não foi possível apagar os registros\n\n");
+        printf ("Cliente: %s tem parcelas em aberto.\n\n",cadastro[k].nome);
+        printf ("<ENTER> para voltar ao MENU CLIENTE");
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+        }while (enter != 13);
+        menuCliente ();
+     }
+}
+//------------------------------------------------------------------------------
+bool deletarCliente (char cod[5]){
+     int k = -100;
+     
+     for (int i=0; i<=qtLinhasParc; i++){
+         if ((strcmp(cod, registro[i].idCli)==0) && (strcmp(registro[i].rec, "N/D")==0))
+            return false; 
+     }
+     return true;
+}
+//------------------------------------------------------------------------------
+void menuParcela (){
+     int op;
+     
+     do {
+     system ("cls");
+         printf ("MENU PARCELAS\n\n");
+         printf ("  1  - Importar\n");
+         printf ("  2  - Mostrar Parcelas\n");
+         printf ("  3  - Adicionar Parcela\n");
+         printf ("  4  - Alterar Parcela\n");
+         printf ("  5  - Excluir Parcela\n");
+         printf (" ESC - Menu Principal\n");
+         printf ("Escolha um opção: ");
+         op = getch ();
+         if (op-48>=0 && op-48<=9) printf ("%d",op-48); 
+         Sleep (timerMenu);
+     }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 53 && op != 27);
+     
+     switch (op){
+            case 49:
+                 if (flagParc){
+                    system ("cls");
+                    printf ("Dados das Parcelas já importados!!!\n");
+                    printf ("<ENTER> para voltar");
+                    do{ //VALIDA SE A PESSOA APERTOU ENTER
+                        fflush (stdin);
+                        enter = getch();
+                    }while (enter != 13);
+                    menuParcela (); 
+                 }
+                 leArquivo ("PARCELAS.txt");
+                 salvaParcela ();
+                 apresenta2 ("Obrigado por esperar! <ENTER> voltar ao MENU PARCELA");
+                 menuParcela ();
+                 break;
+            case 50:
+                 dadosImp (2, flagParc);
+                 mostrarParcela ("Menu Parcela"); 
+                 break;
+            case 51:
+                 dadosImp (2, flagParc);
+                 addParcela ();
+                 break;
+            case 52:
+                 dadosImp (2, flagParc);
+                 mudarParc ();
+                 break;
+            case 53:
+                 dadosImp (2, flagParc);
+                 deletarParcela ();
+                 break;
+            case 27:
+                 menuPrincipal ();
+                 break;   
+     }  
+}
+//------------------------------------------------------------------------------
+void mostrarParcela (char opMenu[15]){
+    int op; //tipo de ordenação
+    int temp[qtLinhasParc];
+    float total;
+    int ini = 0, fim = 0, linhasE = 24;
+    
+    do{
+       system ("cls");
+       printf ("LISTAR PARCELAS CADASTRADAS\n\n");
+       fflush (stdin);
+       printf ("  1  - Por Número da Parcela\n");
+       printf ("  2  - Por Vencimento da Parcela\n");
+       if (strcmp(opMenu, "menu parcela") == 0) printf (" ESC - Menu Parcelas\n");
+       if (strcmp(opMenu, "munu busca") == 0) printf (" ESC - Menu Busca");
+       printf (" Escolha uma opção: ");
+       op = getch ();
+       if (op-48>=0 && op-48<=9) printf ("%d",op-48); 
+       Sleep (timerMenu);
+    }while (op != 49 && op != 50 && op != 27);
+    
+    if (op == 27) menuParcela ();
+    
+    if (op == 49){
+       selectionNumeroPar ();
+    }else{
+       selectionVencPar ();
+    } 
 
+     system ("cls");
+     total = qtLinhasParc;
+     while (total / 24.0 > 0){
+           total = total - linhasE;
+           ini = ini;
+           fim = fim + linhasE;
+     system ("cls");
+     //printf ("IMPORTANDO DADOS DAS PARCELAS...\n");
+     printf ("  Parcela    ID    Vencimento Recebimento    Valor     BC\n");
+     printf ("----------------------------------------------------------\n");
+     for (int x=ini;x<=fim;x++){
+         if (registro[x].st == true){
+             printf("%9s | %4s | %9s | %9s | %9s | %.3d\n",registro[x].idPar, registro[x].idCli, registro[x].venc, registro[x].rec, registro[x].val, registro[x].banco);
+             Sleep (20);
+         }
+     }
+     printf ("----------------------------------------------------------\n");
+     if (total / 24.0 <= 0){
+/*------------------VER ERRO-------------------------*/        printf ("<ENTER> para voltar ao MENU PARCELAS");
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+        }while (enter != 13);
+/*--------------VER ERRO-----------------------------*/         menuParcela ();
+     }else{
+        printf ("<Enter> para continuar");
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+        }while (enter != 13);  
+     }
+     ini = ini + linhasE;
+     }
+}
+//------------------------------------------------------------------------------
+void addParcela (){ //Para realizar a busca binaria, tem-se que descontar qtLinhasParc, se não, sempre irá achar a ultima linha que add.
+     int k = -1, j;
+     bool flag;
+  
+     qtLinhasParc++;
+     system ("cls");
+     
+     //Validando ID CLIENTE
+     while (k == -1){ 
+           printf ("Adicionar Parcelas\n\n");
+           fflush (stdin);
+           printf ("Código do cliente: ");
+           gets (registro[qtLinhasParc].idCli);
+           //selectionNumeroPar ();
+           
+           k = validaID(registro[qtLinhasParc].idCli);
+           
+           if (k == -1){
+              printf ("Código não cadastrado.\n");
+              printf ("<ENTER> para tentar novamente\n");
+              do{ //VALIDA SE A PESSOA APERTOU ENTER
+                 fflush (stdin);
+                 enter = getch();
+              }while (enter != 13);
+              system ("cls");
+           }
+     }
+  
+     //Validando CÓDIGO PARCELA
+     j = 0;
+     while (j != -1){ 
+           system ("cls");
+           printf ("Adicionar Parcelas\n\n");
+           printf ("Cliente: %s\n", cadastro[k].nome);
+           printf ("Código: %s\n\n", cadastro[k].id);
+           
+           fflush (stdin);
+           printf ("Informe código da parcela(Ex: 1234/1): ");
+           gets (registro[qtLinhasParc].idPar);
+            
+           j = buscaBinaria (registro[qtLinhasParc].idPar, 1); //Passando como parametro o '1' para descontar a qtLinhasParc, se não da ruim.
+           
+           if (j != -1){
+              printf ("Número de parcela já cadastrado.\n"); 
+              printf ("<ENTER> para tentar novamente.");
+              do{
+                 enter = getch();
+              }while (enter != 13);
+           }    
+     }
+     
+     //Valida Data Vencimento
+     flag = false;
+     while (not flag){
+         system ("cls");
+         printf ("Adicionar Parcelas\n\n");
+         printf ("Cliente: %s\n", cadastro[k].nome);
+         printf ("Código: %s\n\n", cadastro[k].id);
+         printf ("Código da parcela(Ex: 1234/1): %s\n", registro[qtLinhasParc].idPar);
+         
+         fflush (stdin);
+         printf ("Data do vencimento(Ex: 02/11/21): ");
+         gets (registro[qtLinhasParc].venc);
+         flag = validaDate (registro[qtLinhasParc].venc);
+         if (not flag){ 
+            printf ("Data Inválida.\n");
+            printf ("<ENTER> para tentar novamente.");
+            do{
+               enter = getch();
+            }while (enter != 13);
+         }
+     }   
+     
+     //Valida Valor da parcela
+     do {
+        system ("cls");
+        printf ("Adicionar Parcelas\n\n");
+        printf ("Cliente: %s\n", cadastro[k].nome);
+        printf ("Código: %s\n\n", cadastro[k].id);
+        printf ("Código da parcela(Ex: 1234/1): %s\n", registro[qtLinhasParc].idPar);
+        printf ("Data do vencimento(Ex: 02/11/21): %s\n", registro[qtLinhasParc].venc);
+        
+        fflush (stdin);
+        printf ("Valor da Parcela (Ex: 150,00): ");
+        gets (registro[qtLinhasParc].val);
+        if (strtol(registro[qtLinhasParc].val, NULL, 10) <= 0){ //Convertendo de CHAR para INT (Função 'strtol')
+           printf ("Valor de parcela Inválido\n");
+           printf ("<ENTER> para tentar novamente.");
+           do{
+              enter = getch();
+           }while (enter != 13);
+        }
+     } while (strtol(registro[qtLinhasParc].val, NULL, 10) <= 0);
+     
+     //Valida Banco
+     do{
+        system ("cls");
+        printf ("Adicionar Parcelas\n\n");
+        printf ("Cliente: %s\n", cadastro[k].nome);
+        printf ("Código: %s\n\n", cadastro[k].id);
+        printf ("Código da parcela(Ex: 1234/1): %s\n", registro[qtLinhasParc].idPar);
+        printf ("Data do vencimento(Ex: 02/11/21): %s\n", registro[qtLinhasParc].venc);
+        printf ("Valor da Parcela (Ex: 150,00): %s\n", registro[qtLinhasParc].val);
+        
+        fflush (stdin);
+        printf ("[000] Carteira\n");                                                                                
+        printf ("[001] Banco do Brasil\n");
+        printf ("[104] Caixa Econômica Federal\n");
+        printf ("[237] Bradesco\n");
+        printf ("[260] Nubank\n");
+        printf ("[341] Itaú\n");
+        printf ("Código Banco: ");
+        scanf ("%d",&registro[qtLinhasParc].banco);
+     }while (registro[qtLinhasParc].banco !=0 &&
+      registro[qtLinhasParc].banco != 001 &&
+      registro[qtLinhasParc].banco != 104 && 
+      registro[qtLinhasParc].banco != 237 && 
+      registro[qtLinhasParc].banco != 260 &&
+      registro[qtLinhasParc].banco != 341);
+      
+      k = validaBanco (registro[qtLinhasParc].banco);
+      
+      system ("cls");
+      printf ("Adicionar Parcelas\n\n");
+      printf ("Cliente           : %s\n", cadastro[k].nome);
+      printf ("Código do Cliente : %s\n", cadastro[k].id);
+      printf ("Código Parcela    : %s\n", registro[qtLinhasParc].idPar);
+      printf ("Valor             : %s\n", registro[qtLinhasParc].val);
+      printf ("Banco             : %s\n\n", nomeBanco[k]);
+      printf ("Adicionado com sucesso.\n");
+      printf ("<ENTER> voltar MENU PARCELA");
+      do{ //VALIDA SE A PESSOA APERTOU ENTER
+         fflush (stdin);
+         enter = getch();
+      }while (enter != 13);
+      menuParcela ();   
+}
+//------------------------------------------------------------------------------
+void mudarParc (){ //Busca binaria pasa o tipo igual 0. Pois não add nenhuma linha aqui
+     int k=-1, j=-1;
+     char cod[5], parc[10];
+     
+     while (k == -1){
+         system ("cls");
+         printf ("Alterar PARCELAS\n\n");
+         fflush(stdin);
+         printf ("Código do cliente: ");
+         gets (cod);
+         
+         k = validaID(cod); //Busca o ID do arquivo cliente
+         
+         if (k == -1){
+            printf ("Cliente não cadastrado.\n");
+            printf ("Por favor, tente novamente <ENTER>.");
+            do{ //VALIDA SE A PESSOA APERTOU ENTER
+                fflush (stdin);
+                enter = getch();
+            }while (enter != 13);
+         }
+     }
+     
+     //j = -1;
+     while (j ==-1){
+         fflush(stdin);
+         printf ("Código da parcela: ");
+         gets (parc);
+         
+         j = buscaBinaria(parc, 0); //Verifica o NúMERO DA PARCELA
+          
+         if (j ==-1){
+            printf ("Código da parcela não encontrado\n");
+            printf ("Por favor, tente novamente <ENTER>.");
+            do{ //VALIDA SE A PESSOA APERTOU ENTER
+                fflush (stdin);
+                enter = getch();
+            }while (enter != 13);
+            
+            system ("cls");
+            printf ("Alterar PARCELAS\n\n");
+            printf ("Código do cliente: %s\n", cod);
+            
+         }
+     }
+          
+     //SE A PARCELA PERTENCER AO CLIENTE É PERMITIDO ELE ALTERAR A PARCELA, CASO CONTRARIO, TENTA NOVAMENTE
+     if (strcmp(cadastro[k].id, registro[j].idCli)==0){
+        menuMudarPar (j, k); //Passa a posição da parcela no vetor por parametro para 'int q'
+
+     }else{
+        printf ("\nCódigo informado não é compativel com a parcela desejada\n");
+        printf ("Por favor, tente novamente <ENTER>.");
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+        }while (enter != 13);
+        
+        mudarParc();
+     }
+}
+//------------------------------------------------------------------------------
+int subMenuMudarPac (int p, int cliente){
+    int op = -1;
+    
+    do{
+        fflush (stdin);
+        system ("cls");
+        printf ("Cliente: %s\n", cadastro[cliente].nome);
+        printf ("PARCELA: %s\n\n",registro[p].idPar);
+        printf ("  1  - Alterar Data Vencimento\n");
+        printf ("  2  - Alterar Data Recebimento\n");
+        printf ("  3  - Alterar Valor\n");
+        printf (" ESC - Menu Parcela\n");
+        printf (" Escolha uma opção: ");
+        op = getch ();
+       if (op-48>=0 && op-48<=9) printf ("%d",op-48); 
+       Sleep (timerMenu);
+    }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 27);
+        
+
+    return op;
+     
+}
+//------------------------------------------------------------------------------
+void menuMudarPar (int q, int c){
+     int k;
+     bool flag;
+
+     
+     k = subMenuMudarPac (q, c);
+     while (k > 48 && k < 53){ //Isto é k entre 1 e 4 (Tabela ASCII)
+         
+         //ALTERAR DATA DE VENCIMENTO  
+         if (k == 49){
+            flag = false;
+            while (not flag){ //VALIDA A DATA QUE SERÁ ALTERADA
+                  system ("cls");
+                  printf ("Alterar PARCELA  : %s\n",registro[q].idPar);
+                  printf ("-----------------------------------\n");
+                  printf ("Cliente          : %s\n", cadastro[c].nome);
+                  printf ("Vencimento Atual : %s\n", registro[q].venc);
+                  printf ("-----------------------------------\n");
+                  
+                  fflush (stdin);
+                  printf ("Nova Data Vencimento(Ex: 02/11/21): ");
+                  gets (tmp);
+                  flag = validaDate (tmp);
+                  if (not flag){ 
+                     printf ("Data Inválida.\n");
+                     printf ("Tentar novamente <ENTER>");
+                     do{ //VALIDA SE A PESSOA APERTOU ENTER
+                         fflush (stdin);
+                         enter = getch();
+                     }while (enter != 13);
+                  }
+            }while(not flag);
+            
+            strcpy (registro[q].venc, tmp); //Se a data for valida é salvo a nova data no vetor.
+            registro[q].venc[8] = '\0';
+            
+            system ("cls");
+            printf ("Alterar PARCELA  : %s\n",registro[q].idPar);
+            printf ("-----------------------------------\n");
+            printf ("Cliente          : %s\n", cadastro[c].nome);
+            printf ("Novo Vencimento  : %s\n", registro[q].venc);
+            printf ("-----------------------------------\n");
+            printf ("Parcela alterada com sucesso.\n");
+            printf ("<ENTER> para voltar");
+            do{
+               enter = getch();
+            }while (enter != 13);
+            
+            k = subMenuMudarPac (q, c); //Para voltar ao subMenuMudarParc para ficar em loop ate k= 27 (Tabela ASCII = ESC).
+            
+         }     
+         
+         //ALTERAR DATA RECEBIMENTO
+         if (k == 50){
+            flag = false;
+            while (not flag){ //VALIDA A DATA QUE SERÁ 
+                  system ("cls");
+                  printf ("Alterar PARCELA  : %s\n",registro[q].idPar);
+                  printf ("-----------------------------------\n");
+                  printf ("Cliente          : %s\n", cadastro[c].nome);
+                  printf ("Recebido Atual : %s\n", registro[q].rec);
+                  printf ("-----------------------------------\n");
+                  
+                  fflush (stdin);
+                  printf ("Nova Data Recebimento(Ex: 02/11/21): ");
+                  gets (tmp);
+                  flag = validaDate (tmp);
+                  if (not flag){ 
+                     printf ("Data Inválida.\n");
+                     printf ("Tentar novamente <ENTER>");
+                     do{ //VALIDA SE A PESSOA APERTOU ENTER
+                         fflush (stdin);
+                            enter = getch();
+                     }while (enter != 13);
+                  }
+            }while(not flag);
+            
+            strcpy (registro[q].rec, tmp); //Se a data for valida é salvo a nova data no vetor.
+            registro[q].rec[8] = '\0';
+            
+            system ("cls");
+            printf ("Alterar PARCELA  : %s\n",registro[q].idPar);
+            printf ("-----------------------------------\n");
+            printf ("Cliente          : %s\n", cadastro[c].nome);
+            printf ("Novo Recebido    : %s\n", registro[q].rec);
+            printf ("-----------------------------------\n");
+            printf ("Parcela alterada com sucesso.\n");
+            printf ("<ENTER> para voltar");
+            do{
+               enter = getch();
+            }while (enter != 13);
+            
+            k = subMenuMudarPac (q, c); //Para voltar no subMenuMudarParc paficar em loop ate k= 27 (Tabela ASCII = ESC). 
+         }
+         
+         //ALTERAR VALOR DA PARCELA
+         if (k == 51){
+            do {
+               system ("cls");
+               printf ("Alterar PARCELA  : %s\n",registro[q].idPar);
+               printf ("-----------------------------------\n");
+               printf ("Cliente          : %s\n", cadastro[c].nome);
+               printf ("Valor Atual      : %s\n", registro[q].val);
+               printf ("-----------------------------------\n");
+                
+               fflush(stdin);
+               printf ("Valor da Parcela (Ex: 150,00): ");
+               gets (tmp);
+               if (strtol(tmp, NULL, 10) <= 0){ //Convertendo de CHAR para INT (Função 'strtol')
+                  printf ("Valor de parcela Inválido\n");
+                  do{
+                     enter = getch();
+                  }while (enter != 13);
+               }
+            }while (strtol(tmp, NULL, 10) <= 0);
+            
+            strcpy (registro[q].val, tmp); //Se a data for valida é salvo a nova data no vetor.
+            registro[q].val[8] = '\0';
+            
+            system ("cls");
+            printf ("Alterar PARCELA  : %s\n",registro[q].idPar);
+            printf ("-----------------------------------\n");
+            printf ("Cliente          : %s\n", cadastro[c].nome);
+            printf ("Novo Valor       : %s\n", registro[q].val);
+            printf ("-----------------------------------\n");
+            printf ("Parcela alterada com sucesso.\n");
+            printf ("<ENTER> para voltar");
+            do{
+               enter = getch();
+            }while (enter != 13);
+            
+            k = subMenuMudarPac (q, c); //Para voltar no subMenuMudarParc paficar em loop ate k= 4.
+         }
+         if (k == 27){
+            menuParcela ();
+         }
+     }
+}
+//------------------------------------------------------------------------------
+void deletarParcela (){
+     char cod[5];
+     int k = -1, j, i;
+     
+     while (k == -1){
+         system("cls");
+         printf("EXCLUSÃO DE PARCELAS\n\n");
+         printf("Código da parcela (Ex:1234/1): "); 
+         gets(cod);
+         
+         k = buscaBinaria (cod, 0);
+     }
+     
+     j = validaBanco (registro[k].banco); //Para buscar o nome do Banco
+     i = validaID (registro[k].idCli); //Para buscar o nome do cliente
+     
+     if ((k != -1) && (registro[k].st != false)){
+        registro[k].st = false;
+        
+        system ("cls");
+        printf("EXCLUSÃO DE PARCELAS\n\n");
+        printf ("-----------------------------------------\n");
+        printf("Nome do Cliente       : %s\n", cadastro[i].nome);
+        printf("Código do Cliente     : %s\n", registro[k].idCli);
+        printf("Código da parcela     : %s\n", registro[k].idPar);
+        printf("Vencimento da parcela : %s\n", registro[k].venc);
+        printf("Recebido em           : %s\n", registro[k].rec);
+        printf("Valor                 : %s\n", registro[k].val);
+        printf("Banco                 : %s\n", nomeBanco[j]);
+        printf ("-----------------------------------------\n");
+        printf ("Parcela excluida com sucesso.\n");
+        printf ("<ENTER> para voltar MENU PARCELA");
+        do{
+           enter = getch();
+        }while (enter != 13);
+     }
+     menuParcela ();
+      
+}
+//------------------------------------------------------------------------------
+void menuBusca (){
+     int op;
+
+     do {
+         fflush (stdin);
+         system ("cls");
+         printf ("MENU BUSCA\n\n");
+         printf ("  1  - Importar Cliente\n");
+         printf ("  2  - Importar Parcelas\n");
+         printf ("  3  - Buscar Cliente\n");
+         printf ("  4  - Buscar Parcela\n");
+         printf (" ESC - Menu Principal\n");
+         printf (" Escolha um opção: ");
+         op = getch ();
+         if (op-48>=0 && op-48<=9) printf ("%d",op-48); 
+         Sleep (timerMenu);
+     }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 27);
+     
+     switch (op){
+            case 49:
+                 if (flagCli){
+                    system ("cls");
+                    printf ("Dados dos Clientes já importados!!!\n");
+                    printf ("<ENTER> para voltar");
+                    do{ //VALIDA SE A PESSOA APERTOU ENTER
+                        fflush (stdin);
+                        enter = getch();
+                    }while (enter != 13);
+                    menuBusca (); 
+                 }else{
+                  
+                    leArquivo ("CLIENTES.txt");
+                    salvaCliente ();
+                    apresenta ("AGUARDE, IMPORTANDO...","Obrigado por esperar! <ENTER> voltar ao MENU BUSCA");
+                    menuBusca ();
+                 }
+                 break;
+            case 50:
+                 if (flagParc){
+                    system ("cls");
+                    printf ("Dados das Parcelas já importados!!!\n");
+                    printf ("<ENTER> para voltar");
+                    menuBusca();
+                 }else{
+                  
+                    leArquivo ("PARCELAS.txt");
+                    salvaParcela ();
+                    apresenta2 ("Obrigado por esperar! <ENTER> voltar ao MENU BUSCAR");
+                    menuBusca (); 
+                 }
+                 break;
+            case 51:
+                 dadosImp (3, flagCli);
+                 mostrarCadastro ("<ENTER> para voltar ao MEU BUSCA");
+                 menuBusca ();
+                 break;
+            case 52:
+                 dadosImp (3, flagParc);
+                 mostrarParcela ("menu parcela");
+                 menuBusca ();
+                 break;
+            case 27:
+                 menuPrincipal ();
+                 break;     
+     }      
+}
+//------------------------------------------------------------------------------
+void menuReceita (){
+     int op;
+
+     do {
+         fflush (stdin);
+         system ("cls");
+         printf ("MENU RECEITAS\n\n");
+         printf ("  1  - Personalizado\n");
+         printf ("  2  - Resumo por Banco\n");
+         printf (" ESC - Menu Principal\n");
+         printf (" Escolha um opção: ");
+         op = getch ();
+         if (op-48>=0 && op-48<=9) printf ("%d",op-48); 
+         Sleep (timerMenu);
+     }while (op != 49 && op != 50 && op != 27);
+
+     switch (op){
+            case 49:
+                 dadosImp (4, flagCli);
+                 dadosImp (4, flagParc);
+
+                 break;
+            case 50:
+                 dadosImp (4, flagCli);
+                 dadosImp (4, flagParc);
+                 resumoBanco ();
+                 menuReceita ();
+                 break;
+            case 27:
+                 menuPrincipal ();
+                 break;          
+     } 
+}
+//------------------------------------------------------------------------------
+void personalizado (){
+     
+     printf ("TEM QUE ADAPTAR PARA A OPÇÃO DE PEGAR TODOS...\\n\n\n");
+     
+     char clienteID[5];
+     int banco;
+     int k = -1;
+     int ord, parcela;
+     
+     system ("cls");
+     do{
+        fflush (stdin);
+        printf ("Código Cliente: ");
+        gets (clienteID);
+        k = validaID (clienteID);
+        if (k == -1 || cadastro[k].status == false){
+           printf ("Cliente não cadastrado\n");
+           printf ("<ENTER> para tentar novamente\n");
+           do{ //VALIDA SE A PESSOA APERTOU ENTER
+               fflush (stdin);
+               enter = getch();
+           }while (enter != 13);
+           system ("cls");
+        }
+     }while (k == -1 || cadastro[k].status == false);
+     
+     do{
+        fflush (stdin);
+        printf ("Código do banco: ");
+        scanf ("%d",&banco);
+        k = validaBanco (banco);
+        if (k == -1){
+           printf ("Banco não cadastrado\n");
+           printf ("<ENTER> para tentar novamente\n");
+           do{ //VALIDA SE A PESSOA APERTOU ENTER
+               fflush (stdin);
+               enter = getch();
+           }while (enter != 13);
+           system ("cls");
+           printf ("Código Cliente: %s\n", clienteID);
+        }    
+     }while (k == -1); 
+     
+     do{
+        fflush (stdin);
+        printf ("Ordenar por [1]-PARCELA  [2]-VENCIMENTO: ");
+        scanf ("%d",&ord);
+        if (ord !=1 && ord !=2){
+           system ("cls");
+           printf ("Código Cliente: %s\n", clienteID);
+           printf ("Código do banco: %d\n", banco);
+        
+        }
+     }while (ord !=1 && ord !=2);
+     
+     if (ord == 1){
+        selectionNumeroPar ();
+     }else{
+        selectionVencPar ();
+     }
+     
+     do{
+        fflush (stdin);
+        printf ("Parcelas em [1]ABERTO ou [2]RECEBIDAS ou <ENTER> para ambos: ");
+        scanf ("%d",&parcela);
+        if (parcela !=1 && parcela !=2){
+           system ("cls");
+           printf ("Código Cliente: %s\n", clienteID);
+           printf ("Código do banco: %d\n", banco);
+           printf ("Ordenar por [1]-PARCELA  [2]-VENCIMENTO: %d\n",ord);
+        }
+     }while(parcela !=1 && parcela !=2);
+     
+     
+     
+     //VALIDAÇÃO SE TEM A PARCELA MAS NÃO É DO BANCO INFORMADO
+     bool j;
+     j = false;
+     j = parcelaBanco(clienteID, banco);
+     
+     clienteEUmbanco (clienteID, banco, ord, parcela, j);
+     //PASSO POR PARAMETRO
+         
+}
+//------------------------------------------------------------------------------
 void leArquivo(char nomeArq[15]){
     FILE *arq;
      
@@ -214,244 +1291,7 @@ void dadosImp (int tipo, bool flag){
     }   
 }
 //------------------------------------------------------------------------------
-void menuCliente (){
-     int op;
-     
-     do {
-         fflush (stdin);
-         system ("cls");
-         printf ("MENU CLIENTE\n\n");
-         printf ("1 - Importar\n");
-         printf ("2 - Mostrar Cadastros\n");
-         printf ("3 - Adicionar\n");
-         printf ("4 - Alterar\n");
-         printf ("5 - Excluir\n");
-         printf ("0 - Menu Principal\n");
-         printf ("Escolha um opção: ");
-         scanf ("%d",&op);
-     }while (op < 0 || op >5);
-     
-     switch (op){
-            case 1:
-                 if (flagCli){
-                    system ("cls");
-                    printf ("Dados dos Clientes já importados!!!\n");
-                    printf ("<ENTER> para voltar");
-                    getch();
-                    menuCliente (); 
-                 }
-                 leArquivo ("CLIENTES.txt");
-                 salvaCliente ();
-                 apresenta ("Obrigado por esperar! <ENTER> voltar ao MENU CLIENTE");
-                 menuCliente ();
-                 break;
-            case 2:
-                 dadosImp (1, flagCli);
-                 mostrarCadastro ("<ENTER> para voltar ao MEU CLIENTE"); 
-                 menuCliente ();
-                 break;
-            case 3:
-                 dadosImp (1, flagCli);
-                 cadastrarCliente ();
-                 break;
-            case 4:
-                 dadosImp (1, flagCli);
-                 mudarCliente ();
-                 break;
-            case 5:
-                 dadosImp (1, flagCli);
-                 deletarCliente ();
-                 break;
-                 case 0:
-                 menuPrincipal ();
-                 break;
-                 
-     }    
-}
-//------------------------------------------------------------------------------
-void mostrarCadastro (char descricao[50]){
-     char cidade[10], uf[3];
-     int ord;
-     int temp[qtLinhasCli];
-     int linha = 0;
-     
-     system ("cls");
-     printf ("%d",qtLinhasCli);
-     printf ("Lista de Clientes Cadastrados\n\n");
-     
-     fflush (stdin);
-     printf ("Cidade desejada (Enter para TODAS): ");
-     gets (cidade);
-     maiusc (cidade); //PARA GRAVAR E PESQUISAR TUDO EM MAIUSCULO
-     strcpy (cidade, tmp2);
-     
-     fflush (stdin);
-     printf ("UF desejada (Enter para TODOS): ");
-     gets (uf);
-     maiusc (uf); //PARA GRAVAR TUDO EM MAIUSCULO
-     strcpy (uf, tmp2);
-     
-     do{
-        fflush (stdin);
-        printf ("Ordenação (1 - Nome | 2 - ID):");
-        scanf ("%d",&ord);
-     }while (ord != 1 && ord != 2);
-     
-     if (ord == 1){
-        selectionNome ();
-     }else{
-        selectionIdCliente ();
-     }
-     
-     
-     
-     
-     //AQUI É O FILTRO PARA A SELEÇÃO DE CIDADE E UF
-     system ("cls");
-     printf (" ID          Cliente                  Cidade           UF        RG/CPF/CNPJ\n");
-     printf ("---------------------------------------------------------------------------------\n");
-     for (int x=0; x<=qtLinhasCli;x++){
-         if ((strcmp(cidade, cadastro[x].cidade)==0  )  &&  (strcmp(uf, cadastro[x].UF)==0  )){ ////////////////TENTEI USAR O 13 DA TABELA ASCII COMO PADRAO PARA O ENTER
-           if (cadastro[x].status == true){
-              printf("%4s | %20s | %22s | %2s | %19s |\n",cadastro[x].id, cadastro[x].nome, cadastro[x].cidade, cadastro[x].UF, cadastro[x].ident);
-              Sleep (20);
-              linha++;
-              if (linha == 26) {
-                 printf ("---------------------------------------------------------------------------------\n");
-                 printf ("<Enter> para mostrar mais");
-                 getch();
-                 system ("cls");
-                 printf (" ID          Cliente                  Cidade           UF        RG/CPF/CNPJ\n");
-                 printf ("---------------------------------------------------------------------------------\n");
-              } 
-           }
-           
-           if (linha > 26){
-              if ((strcmp(cidade, cadastro[x].cidade)==0  )  &&  (strcmp(uf, cadastro[x].UF)==0  )){ ////////////////TENTEI USAR O 13 DA TABELA ASCII COMO PADRAO PARA O ENTER
-                 if (cadastro[x].status == true){
-                    printf("%4s | %20s | %22s | %2s | %19s |\n",cadastro[x].id, cadastro[x].nome, cadastro[x].cidade, cadastro[x].UF, cadastro[x].ident);
-                    Sleep (20);
-                    linha++;
-                 } 
-              }
-           }
-         }
-     }
-     printf ("---------------------------------------------------------------------------------\n");
-     printf (descricao);
-     getch();     
-}
-//------------------------------------------------------------------------------
-void menuParcela (){
-     int op;
-     char menu[15] = "Menu Parcela";
-     
-     do {
-     system ("cls");
-         printf ("MENU PARCELAS\n\n");
-         printf ("1 - Importar\n");
-         printf ("2 - Mostrar Parcelas\n");
-         printf ("3 - Adicionar Parcela\n");
-         printf ("4 - Alterar Parcela\n");
-         printf ("5 - Excluir Parcela\n");
-         printf ("0 - Menu Principal\n");
-         printf ("Escolha um opção: ");
-         scanf ("%d",&op);
-     }while (op < 0 || op >5);
-switch (op){
-            case 1:
-                 if (flagParc){
-                    system ("cls");
-                    printf ("Dados das Parcelas já importados!!!\n");
-                    printf ("<ENTER> para voltar");
-                    getch();
-                    menuParcela (); 
-                 }
-                 leArquivo ("PARCELAS.txt");
-                 salvaParcela ();
-                 apresenta2 ("Obrigado por esperar! <ENTER> voltar ao MENU PARCELA");
-                 menuParcela ();
-                 break;
-            case 2:
-                 dadosImp (2, flagParc);
-                 mostrarParcela (menu); 
-                 break;
-            case 3:
-                 dadosImp (2, flagParc);
-                 addParcela ();
-                 break;
-            case 4:
-                 dadosImp (2, flagParc);
-                 mudarParc ();
-                 break;
-            case 5:
-                 dadosImp (2, flagParc);
-                 printf ("FALTA FAZER");
-                 getch ();
-                 menuParcela ();
-                 break;
-                 case 0:
-                 menuPrincipal ();
-                 break;   
-     }  
-}
-//------------------------------------------------------------------------------
-void mostrarParcela (char opMenu[15]){
-    int ord;
-    int temp[qtLinhasParc];
-    float total;
-    int ini = 0, fim = 0, linhasE = 24;
-    
-    do{
-       system ("cls");
-       printf ("LISTAR PARCELAS CADASTRADAS\n\n");
-       fflush (stdin);
-       printf ("1 - Por Número da Parcela\n");
-       printf ("2 - Por Vencimento da Parcela\n");
-       if (strcmp(opMenu, "menu parcela") == 0) printf ("0 - Menu Parcelas\n");
-       if (strcmp(opMenu, "munu busca") == 0) printf ("0 - Menu Busca");
-       printf ("Escolha uma opção: ");
-       scanf ("%d",&ord);
-    }while (ord != 1 && ord != 2 && ord != 0);
-    
-    if (ord == 0) menuParcela ();
-    
-    if (ord == 1){
-       selectionNumeroPar ();
-    }else{
-       selectionVencPar ();
-    } 
-
-     system ("cls");
-     total = qtLinhasParc;
-     while (total / 24.0 > 0){
-           total = total - linhasE;
-           ini = ini;
-           fim = fim + linhasE;
-     system ("cls");
-     printf ("IMPORTANDO DADOS DAS PARCELAS...\n");
-     printf ("  Parcela    ID    Vencimento Recebimento    Valor     BC\n");
-     printf ("----------------------------------------------------------\n");
-     for (int x=ini;x<=fim;x++){
-         if (registro[x].st == true){
-             printf("%9s | %4s | %9s | %9s | %9s | %.3d\n",registro[x].idPar, registro[x].idCli, registro[x].venc, registro[x].rec, registro[x].val, registro[x].banco);
-             Sleep (20);
-         }
-     }
-     printf ("----------------------------------------------------------\n");
-     if (total / 24.0 <= 0){
-        printf ("<ENTER> para voltar ao MENU PARCELAS");
-        getch ();
-        menuParcela ();
-     }else{
-        printf ("<Enter> para continuar");
-        getch ();  
-     }
-     ini = ini + linhasE;
-     }
-}
-//------------------------------------------------------------------------------
-void apresenta(char menu[50]){
+void apresenta(char legenda[50], char menu[50]){
      int total;
      int ini = 0, fim = 0, linhasE = 24;
      
@@ -463,20 +1303,20 @@ void apresenta(char menu[50]){
            fim = fim + linhasE;
      system ("cls");
      printf ("IMPORTANDO DADOS DOS CLIENTE...\n");
-     printf (" ID          Cliente                  Cidade           UF        RG/CPF/CNPJ\n");
-     printf ("---------------------------------------------------------------------------------\n");
+     printf (" ID          Cliente                  Cidade              UF     RG/CPF/CNPJ\n");
+     printf ("-----------------------------------------------------------------------------------\n");
      for (int x=ini;x<=fim;x++){
          if (cadastro[x].status == true){
-            printf("%4s | %20s | %22s | %2s | %19s | %d\n",cadastro[x].id, cadastro[x].nome, cadastro[x].cidade, cadastro[x].UF, cadastro[x].ident, cadastro[x].status);
+            printf("%4s | %20s | %25s | %2s | %19s | %d\n",cadastro[x].id, cadastro[x].nome, cadastro[x].cidade, cadastro[x].UF, cadastro[x].ident, cadastro[x].status);
             Sleep (20);
          }
      }
-     printf ("---------------------------------------------------------------------------------\n");
+     printf ("-----------------------------------------------------------------------------------\n");
      if (total / 24.0 <= 0){
         printf (menu);
         getch ();
      }else{
-        printf ("AGUARDE, IMPORTANDO...");
+        printf (legenda);
         Sleep (1000);   
      }
      ini = ini + linhasE;
@@ -506,7 +1346,10 @@ void apresenta2(char menu[50]){
      printf ("----------------------------------------------------------\n");
      if (total / 24.0 <= 0){
         printf (menu);
-        getch ();
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+           fflush (stdin);
+           enter = getch();
+        }while (enter != 13);
      }else{
         printf ("AGUARDE, IMPORTANDO...");
         Sleep (1000);   
@@ -585,7 +1428,7 @@ void salvaCliente (){
          
          cadastro[i].status = true;
      }
-     cadastro[0].status = false;
+     //cadastro[0].status = false;
      qtLinhasCli = qtLinhas;
      flagCli = true; //Significa que já realizou a importação dos CLIENTE...
 }
@@ -707,151 +1550,17 @@ void selectionVencPar (){ //Organiza por vencimento da parcela
       system ("pause");
 }
 //------------------------------------------------------------------------------
-int menuMudarCli (int p) {
-     int op = -1;
-     do{
-        fflush (stdin);
-        system ("cls");
-        printf ("Alterar dados do Cliente: %s\n", cadastro[p].nome);
-        printf ("1 - Alterar Nome\n");
-        printf ("2 - Alterar Cidade\n");
-        printf ("3 - Alterar UF\n");
-        printf ("4 - Alterar RG/CPF/CNPJ\n");
-        printf ("5 - Menu Cliente\n");                                                //*********************
-        printf ("Escolha uma opção: ");
-        scanf ("%d", &op);
-     }while (op <=0 || op >=6);
-     return op;
-}
-//------------------------------------------------------------------------------
-void mudarCliente (){ 
-     int k, j;
-     char cod[5];
-     
-     system ("cls");
-     fflush (stdin);
-     printf ("Código do cliente a ser altualizado: ");
-     gets (cod);
-     qtLinhasCli++; //Por conta da forma que está implementado validaID
-     k = validaID(cod);
-     qtLinhasCli--;
-     
-     if (k != -1){
-        do{
-           j=0;
-           j = menuMudarCli (k);
-           if (j == 1){
-            fflush(stdin);
-            printf ("Novo Nome: ");
-            gets (cadastro[k].nome);
-            maiusc (cadastro[k].nome);      //PARA GRAVAR TUDO EM MAIUSCULO
-            strcpy (cadastro[k].nome, tmp2);
-           }
-           if (j == 2){
-            fflush(stdin);
-            printf ("Nova Cidade: ");
-            gets (cadastro[k].cidade);
-            maiusc (cadastro[k].cidade);      //PARA GRAVAR TUDO EM MAIUSCULO
-            strcpy (cadastro[k].cidade, tmp2);
-           }
-           if (j == 3){
-            fflush(stdin);
-            printf ("Novo UF: ");
-            gets (cadastro[k].UF);
-            maiusc (cadastro[k].UF);      //PARA GRAVAR TUDO EM MAIUSCULO
-            strcpy (cadastro[k].UF, tmp2);  
-           }
-           if (j == 4){
-            fflush(stdin);
-            printf ("RG/CPF/CNPJ: ");
-            gets (cadastro[k].ident); 
-            maiusc (cadastro[k].ident);      //PARA GRAVAR TUDO EM MAIUSCULO
-            strcpy (cadastro[k].ident, tmp2);
-           }
-           if (j ==5){
-              menuCliente ();
-           }
-        }while(j != 5);
-             
-     }
-     else{
-       printf ("Cliente não cadastrado!!!\n"); 
-       printf ("<ENTER> para voltar (MENU CLIENTE)");  
-       getch();
-       menuCliente ();
-     }
-     /*printf ("%s\n",cadastro[k].id);
-     printf ("%s\n",cadastro[k].nome);
-     printf ("%s\n",cadastro[k].cidade);
-     printf ("%s\n",cadastro[k].UF);
-     printf ("%s\n",cadastro[k].ident);
-     system ("pause");*/
-}
-//------------------------------------------------------------------------------
 int validaID (char comp[5]){ //Busca exastiva (da para melhorar se sobrar tempo)
      
      for (int i = 0; i <= qtLinhasCli-1; i++){
          if (strcmp(comp, cadastro[i].id) == 0){
-            /*if (cadastro[i].status == false){
+            if (cadastro[i].status == false){
                return -1;
-            }*/
+            }
             return i;
          }
      }
      return -1;
-}
-//------------------------------------------------------------------------------
-void cadastrarCliente (){
-     int k = -10;
-     
-     qtLinhasCli++;
-     system ("cls");
-     printf ("Cadastrar NOVO Cliente\n");
-     while (k != -1){
-           fflush (stdin);
-           printf ("Código: ");
-           gets (cadastro[qtLinhasCli].id);
-           k = validaID (cadastro[qtLinhasCli].id);
-           if (k != -1) printf ("Código já cadastrado!!!\n");
-     }
-     fflush (stdin);
-     printf ("Nome: ");
-     gets (cadastro[qtLinhasCli].nome);
-     maiusc (cadastro[qtLinhasCli].nome); //PARA GRAVAR TUDO EM MAIUSCULO
-     strcpy (cadastro[qtLinhasCli].nome, tmp2);
-     
-     fflush (stdin);
-     printf ("Cidade: ");
-     gets (cadastro[qtLinhasCli].cidade);
-     maiusc (cadastro[qtLinhasCli].cidade); //PARA GRAVAR TUDO EM MAIUSCULO
-     strcpy (cadastro[qtLinhasCli].cidade, tmp2);
-     
-     fflush (stdin);    
-     printf ("UF: ");
-     gets (cadastro[qtLinhasCli].UF);
-     maiusc (cadastro[qtLinhasCli].UF); //PARA GRAVAR TUDO EM MAIUSCULO
-     strcpy (cadastro[qtLinhasCli].UF, tmp2);
-     
-     fflush (stdin);    
-     printf ("RG/CPF/CNPJ: ");
-     gets (cadastro[qtLinhasCli].ident);
-     maiusc (cadastro[qtLinhasCli].ident); //PARA GRAVAR TUDO EM MAIUSCULO
-     strcpy (cadastro[qtLinhasCli].ident, tmp2);
-     
-     cadastro[qtLinhasCli].status = true;
-     
-     /*
-     printf ("%d",qtLinhasCli);
-     printf ("%s\n",cadastro[qtLinhasCli].id);
-     printf ("%s\n",cadastro[qtLinhasCli].nome);
-     printf ("%s\n",cadastro[qtLinhasCli].cidade);
-     printf ("%s\n",cadastro[qtLinhasCli].UF);
-     printf ("%s\n",cadastro[qtLinhasCli].ident);
-     */
-     printf ("\nCadastro realizado!!!\n");
-     printf ("<ENTER> para voltar ao MENU CLIENTE");
-     getch();
-     menuCliente ();
 }
 //------------------------------------------------------------------------------
 void maiusc (char palavra[30]){
@@ -861,47 +1570,25 @@ void maiusc (char palavra[30]){
      tmp2[strlen(palavra)] ='\0';
 }
 //------------------------------------------------------------------------------
-void deletarCliente (){ ///************************************************************************************************
-     char cod[5];
-     int k = -100;
-     
-     system ("cls");
-     qtLinhasCli++; //Sem isso, não pega o último código do cliente
-     printf ("Deletar Cliente\n");
-     do{
-        fflush (stdin);
-        printf ("Código do Cliente: ");
-        gets (cod);
-        k = validaID (cod);
-     if (k == -1) printf ("Cliente não cadastrado.\n");
-     }while (k == -1);
-     
-     cadastro[k].status = false;
-     qtLinhasCli--; //Para voltar ao normal
-     
-     printf ("\nCliente %s deletado.\n\n",cadastro[k].nome);
-     printf ("<ENTER> para voltar ao MENU CLIENTE");
-     getch();
-     menuCliente ();
-     
-     //printf ("%d",cadastro[k].status);
-     //system ("pause");
-}
-//------------------------------------------------------------------------------
 int buscaBinaria (char pesquisa[5], int tipo){ //BUSCA PARA ACHAR O número da parcela
     int ini, fim, meio, p = 0; 
     
-    selectionNumeroPar ();        
+    /*printf ("%s\n",pesquisa);
+    printf ("%d\n", tipo);
+    system ("pause");*/
+            
     
     if (tipo == 1) qtLinhasParc--;
     
+    
+    selectionNumeroPar ();
     ini = 0;
     fim = qtLinhasParc;
     while (ini <= fim){
           meio = (ini+fim)/2;
           if (strcmp(registro[meio].idPar, pesquisa) == 0){
              p = meio;
-             if (tipo = 1) qtLinhasParc++;
+             if (tipo == 1) qtLinhasParc++;
              return p;//retorna a posição da parcela
           }else{
               if (strcmp(pesquisa, registro[meio].idPar) < 0){ 
@@ -914,250 +1601,6 @@ int buscaBinaria (char pesquisa[5], int tipo){ //BUSCA PARA ACHAR O número da pa
     }
     if (tipo == 1) qtLinhasParc++;
     return -1; // retorna -1 número da parcela não encontrado
-}
-//------------------------------------------------------------------------------
-/*int buscaBinariaIdCli (char pesquisa[5], int tipo){ //BUSCA PARA ACHAR O número da parcela
-    int ini, fim, meio, p = 0;           
-    
-    selectionIdCliente ();
-    
-    if (tipo == 1) qtLinhasParc--;
-
-    ini = 0;
-    fim = qtLinhasParc;
-    while (ini <= fim){
-          meio = (ini+fim)/2;
-          if (strcmp(cadastro[meio].id, pesquisa) == 0){
-             p = meio;
-             if (tipo == 1) qtLinhasParc++;
-             return p;//retorna a posição da parcela
-          }else{
-              if (strcmp(pesquisa, cadastro[meio].id) < 0){ 
-                 fim = meio - 1;           
-              }
-              else {
-                   ini = meio + 1;
-              }
-          }                  
-    }
-    if (tipo == 1) qtLinhasParc++;
-    return -1; // retorna -1 número da parcela não encontrado
-}*/
-//------------------------------------------------------------------------------
-void valCliPar (){
-    if (flagCli == false){
-        printf ("ATENÇÃO: Dados dos Clientes devem serem IMPORTADOS\n");
-        printf ("<ENTER> para voltar ao MENU PRINCIPAL");
-        getch ();
-        menuPrincipal ();
-    }          
-}
-//------------------------------------------------------------------------------**********************************
-void addParcela (){ //Para realizar a busca binaria, tem-se que descontar qtLinhasParc, se não, sempre irá achar a ultima linha que add.
-     int k = -1, j;
-     bool flag;
-     
-     valCliPar ();
-  
-     qtLinhasParc++;
-     system ("cls");
-     while (k == -1){ //Validando ID CLIENTE
-           printf ("Adicionar Parcelas\n\n");
-           fflush (stdin);
-           printf ("Código do cliente: ");
-           gets (registro[qtLinhasParc].idCli);
-           //selectionNumeroPar ();
-
-           k = validaID(registro[qtLinhasParc].idCli);
-           
-           if (k == -1){
-              printf ("Código não cadastrado.\n");
-              printf ("<ENTER> para tentar novamente\n");
-              getch ();
-              system ("cls");
-           }
-     }
-     system ("cls");
-     printf ("Adicionar Parcelas\n\n");
-     printf ("Cliente: %s\n", cadastro[k].nome);
-     printf ("Código: %s\n\n", cadastro[k].id);
-     j = 0;
-     selectionNumeroPar ();
-     while (j != -1){ //Validando CÓDIGO PARCELA
-           fflush (stdin);
-           printf ("Informe código da parcela(Ex: 1234/1): ");
-           gets (registro[qtLinhasParc].idPar);
-            
-           j = buscaBinaria (registro[qtLinhasParc].idPar, 1); //Passando como parametro o '1' para descontar a qtLinhasParc, se não da ruim.
-           
-           if (j != -1) printf ("Número de parcela já cadastrado.\n");     
-     }
-     
-     flag = false;
-     while (not flag){
-         fflush (stdin);
-         printf ("Data do vencimento(Ex: 02/11/21): ");
-         gets (registro[qtLinhasParc].venc);
-         flag = validaDate (registro[qtLinhasParc].venc);
-         if (not flag) printf ("Data Inválida.\n");
-     }   
-     
-     do {
-        fflush (stdin);
-        printf ("Valor da Parcela (Ex: 150,00): ");
-        gets (registro[qtLinhasParc].val);
-        if (strtol(registro[qtLinhasParc].val, NULL, 10) <= 0) //Convertendo de CHAR para INT (Função 'strtol')
-           printf ("Valor de parcela Inválido\n");
-     } while (strtol(registro[qtLinhasParc].val, NULL, 10) <= 0);
-     
-     do{
-        fflush (stdin);
-        printf ("(0   - Carteira)\n(001 - Banco do Brasil)\n(104 - Caixa Econômica Federal)\n(237 - Bradesco)\n(260 - Nubank)\nCódigo Banco: ");                                                                                
-        //gets (registro[qtLinhasParc].banco);
-        scanf ("%d",&registro[qtLinhasParc].banco);
-     }while (registro[qtLinhasParc].banco !=0 &&
-      registro[qtLinhasParc].banco !=001 &&
-      registro[qtLinhasParc].banco !=104 && 
-      registro[qtLinhasParc].banco !=237 && 
-      registro[qtLinhasParc].banco !=260);
-      //ESSA MERDA FUNCIONA ASSIM SÓ SE A VARIAVEL FOR int (só Deus sabe o motivo)... 
-      
-      system ("cls");
-      printf ("Adicionar Parcelas\n\n");
-      printf ("Cliente        : %s\n", cadastro[k].nome);
-      printf ("Código         : %s\n", cadastro[k].id);
-      printf ("Código Parcela : %s\n", registro[qtLinhasParc].idPar);
-      printf ("Valor          : %s\n\n", registro[qtLinhasParc].val);
-      printf ("Salvo com sucesso.\n");
-      printf ("<ENTER> voltar MENU PARCELA");
-      getch ();
-      menuParcela ();   
-}
-//------------------------------------------------------------------------------
-void mudarParc (){ //Busca binaria pasa o tipo igual 0. Pois não add nenhuma linha aqui
-     int k=-1, j=-1;
-     char cod[5], parc[10];
-     
-     valCliPar ();
-     
-     system ("cls");
-     printf ("Alterar PARCELAS\n\n");
-     while (k == -1){
-         fflush(stdin);
-         printf ("Código do cliente: ");
-         gets (cod);
-         k = validaID(cod); //Busca o ID do arquivo cliente
-         if (k == -1) printf ("Cliente não cadastrado.\n");
-     }
-
-     //j = -1;
-     while (j ==-1){
-         selectionNumeroPar ();
-         fflush(stdin);
-         printf ("Código da parcela: ");
-         gets (parc);
-         j = buscaBinaria(parc, 0); 
-         if (k==-1) printf ("Código da parcela não encontrado\n");
-     }
-     //printf ("id    - %s\n",cadastro[k].id);
-     //printf ("idCli - %s\n",registro[j].idCli);
-     //system ("pause");
-          
-     if (strcmp(cadastro[k].id, registro[j].idCli)==0){
-        menuMudarPar (j, k); //Passa a posição da parcela no vetor por parametro para 'int q'
-
-     }else{
-        system ("cls");
-        printf ("Código informado não é compativel com a parcela desejada\n");
-        printf ("Por favor, tente novamente <ENTER>.");
-        getch ();
-        mudarParc();
-     }
-     
-     printf ("Parcela %s\n", registro[j].idPar);
-}
-//------------------------------------------------------------------------------
-int subMenuMudarPac (int p, int cliente){
-    int op = -1;
-    
-    do{
-        fflush (stdin);
-        system ("cls");
-        printf ("Cliente: %s\n", cadastro[cliente].nome);
-        printf ("PARCELA: %s\n\n",registro[p].idPar);
-        printf ("1 - Alterar Data Vencimento\n");
-        printf ("2 - Alterar Data Recebimento\n");
-        printf ("3 - Alterar Valor\n");
-        printf ("4 - Menu Parcela\n");
-        printf ("Escolha uma opção: ");
-        scanf ("%d", &op);
-    }while (op <=0 || op >=5);
-    return op;
-     
-}
-//------------------------------------------------------------------------------
-void menuMudarPar (int q, int c){
-     int k;
-     bool flag;
-     
-     k = subMenuMudarPac (q, c);
-     while (k > 0 && k < 5){ //Isto é k entre 1 e 4
-         if (k == 1){
-            flag = false;
-            while (not flag){ //VALIDA A DATA QUE SERÁ ALTERADA
-                  system ("cls");
-                  printf ("Cliente: %s\n", cadastro[c].nome);
-                  printf ("Alterar PARCELA: %s\n\n",registro[q].idPar);
-                  
-                  fflush (stdin);
-                  printf ("Nova Data Vencimento(Ex: 02/11/21): ");
-                  gets (registro[q].venc);
-                  flag = validaDate (registro[q].venc);
-                  if (not flag){ 
-                     printf ("Data Inválida.\n");
-                     printf ("Tentar novamente <ENTER>");
-                     getch ();
-                  }
-            }while(not flag); 
-            k = subMenuMudarPac (q, c); //Para voltar no subMenuMudarParc paficar em loop ate k= 4.
-         }     
-         if (k == 2){
-            flag = false;
-            while (not flag){ //VALIDA A DATA QUE SERÁ 
-                  system ("cls");
-                  printf ("Cliente: %s\n", cadastro[c].nome);
-                  printf ("Alterar PARCELA: %s\n\n",registro[q].idPar);
-                  
-                  fflush (stdin);
-                  printf ("Nova Data Recebimento(Ex: 02/11/21): ");
-                  gets (registro[q].rec);
-                  flag = validaDate (registro[q].rec);
-                  if (not flag){ 
-                     printf ("Data Inválida.\n");
-                     printf ("Tentar novamente <ENTER>");
-                     getch ();
-                  }
-            }while(not flag);
-            k = subMenuMudarPac (q, c); //Para voltar no subMenuMudarParc paficar em loop ate k= 4. 
-         }
-         if (k == 3){
-            do {
-               system ("cls");
-               printf ("Cliente: %s\n", cadastro[c].nome);
-               printf ("Alterar PARCELA: %s\n\n",registro[q].idPar);
-                
-               fflush(stdin);
-               printf ("Valor da Parcela (Ex: 150,00): ");
-               gets (registro[q].val);
-               if (strtol(registro[q].val, NULL, 10) <= 0) //Convertendo de CHAR para INT (Função 'strtol')
-                  printf ("Valor de parcela Inválido\n");
-            }while (strtol(registro[q].val, NULL, 10) <= 0);
-            k = subMenuMudarPac (q, c); //Para voltar no subMenuMudarParc paficar em loop ate k= 4.
-         }
-         if (k == 4){
-            menuParcela ();
-         }
-     }
 }
 //------------------------------------------------------------------------------
 bool validaDate (char data[7]){
@@ -1227,7 +1670,7 @@ void menuResumidoPag (float a, float r, float t){
      getch ();     
 }*/
 //------------------------------------------------------------------------------
-void contaBanco (){
+void resumoBanco (){
      float totalCarteiraA = 0, totalCarteiraR = 0, totalCarteiraG = 0;
      float totalBbA = 0, totalBbR = 0, totalBbG = 0;
      float totalCxA = 0, totalCxR = 0, totalCxG = 0;
@@ -1238,7 +1681,7 @@ void contaBanco (){
      
      for (int i = 0; i <= qtLinhasParc; i++){
          //CARTEIRA (0)
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 0)) //Pega todos os valores da CCARTEIRA em ABERTO
+         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 0) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
             totalCarteiraA = totalCarteiraA + registro[i].valor;      //Para TOTAL ABERTO CARTEIRA
          if (registro[i].banco == 0) //Pega todos os valores da CCARTEIRA
             totalCarteiraG = totalCarteiraG + registro[i].valor;//Pega todos os valores da CARTEIRA.
@@ -1247,33 +1690,33 @@ void contaBanco (){
         //getch ();
             
          //BANCO DO BRASIL (001)   
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 001)) //Pega todos os valores da CCARTEIRA em ABERTO
+         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 001) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
             totalBbA = totalBbA + registro[i].valor;      //Para TOTAL ABERTO BANCO DO BRASIL
-         if (registro[i].banco == 001) //Pega todos os valores do BANCO DO BRASIL CCARTEIRA
+         if ((registro[i].banco == 001) && (registro[i].st == true)) //Pega todos os valores do BANCO DO BRASIL CCARTEIRA
             totalBbG = totalBbG + registro[i].valor;
             
          //CAIXA ECÔNOMICA FERERAL (104)   
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 104)) //Pega todos os valores da CCARTEIRA em ABERTO
+         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 104) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
             totalCxA = totalCxA + registro[i].valor;      //Para TOTAL ABERTO CAIXA ECÔNOMICA FERERAL
-         if (registro[i].banco == 104) //Pega todos os valores da CAIXA ECÔNOMICA FERERAL
+         if ((registro[i].banco == 104) && (registro[i].st == true)) //Pega todos os valores da CAIXA ECÔNOMICA FERERAL
             totalCxG = totalCxG + registro[i].valor;
             
          //BRADESCO (237)  
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 237)) //Pega todos os valores da CCARTEIRA em ABERTO
+         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 237) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
             totalBdA = totalBdA + registro[i].valor;      //Para TOTAL ABERTO BRADESCO
-         if (registro[i].banco == 237) //Pega todos os valores do BRADESCO
+         if ((registro[i].banco == 237) && (registro[i].st == true)) //Pega todos os valores do BRADESCO
             totalBdG = totalBdG + registro[i].valor;
             
          //NUBANCK (260)  
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 260)) //Pega todos os valores da CCARTEIRA em ABERTO
+         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 260) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
             totalNuA = totalNuA + registro[i].valor;      //Para TOTAL ABERTO NUBANCK
-         if (registro[i].banco == 260) //Pega todos os valores do NUBANCK
+         if ((registro[i].banco == 260) && (registro[i].st == true)) //Pega todos os valores do NUBANCK
             totalNuG = totalNuG + registro[i].valor;
             
          //ITAÚ (341)  
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 341)) //Pega todos os valores da CCARTEIRA em ABERTO
+         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 341) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
             totalItA = totalItA + registro[i].valor;      //Para TOTAL ABERTO ITAÚ
-         if (registro[i].banco == 341) //Pega todos os valores do ITAÚ
+         if ((registro[i].banco == 341) && (registro[i].st == true)) //Pega todos os valores do ITAÚ
             totalItG = totalItG + registro[i].valor;
      }
      //Conta para achar o Total Recebido por Banco
@@ -1301,7 +1744,10 @@ void contaBanco (){
      printf ("------------------------------------------------------------------\n");
      printf ("           TOTAL          %.2f       %.2f       %.2f \n", totalAberto, totalRecebido, totalBanco);
      printf ("<ENTER> para voltar MENU RECEITAS");
-     getch();    
+     do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+     }while (enter != 13);   
 }
 //------------------------------------------------------------------------------
 void receitaBancoCliente (int tipo){   //Tipo 1: Banco - Tipo 2: Cliente
@@ -1334,14 +1780,20 @@ void receitaBancoCliente (int tipo){   //Tipo 1: Banco - Tipo 2: Cliente
      if (not flag && tipo == 1){
         printf ("Banco não cadastrado.\n");
         printf ("<ENTER> para nova consulta");
-        getch ();
+        do{ //VALIDA SE A PESSOA APERTOU ENTER
+            fflush (stdin);
+            enter = getch();
+        }while (enter != 13);
         system ("cls");
      }
      if (not flag && tipo == 2){
         if (k == -1){
            printf ("Cliente não cadastrado\n");
            printf ("<ENTER> para nova consulta\n");
-           getch ();
+           do{ //VALIDA SE A PESSOA APERTOU ENTER
+               fflush (stdin);
+               enter = getch();
+           }while (enter != 13);
            system ("cls");
         }
      }
@@ -1369,182 +1821,6 @@ void receitaBancoCliente (int tipo){   //Tipo 1: Banco - Tipo 2: Cliente
      printf ("Total: %.2f\n",totalCliente);
      getch ();
      }     
-}
-//------------------------------------------------------------------------------
-void menuBusca (){
-     int op;
-
-     do {
-         fflush (stdin);
-         system ("cls");
-         printf ("MENU BUSCA\n\n");
-         printf ("1 - Importar Cliente\n");
-         printf ("2 - Importar Parcelas\n");
-         printf ("3 - Buscar Cliente\n");
-         printf ("4 - Buscar Parcela\n");
-         printf ("0 - Menu Principal\n");
-         printf ("Escolha um opção: ");
-         scanf ("%d",&op);
-     }while (op < 0 || op >4);
-     
-     switch (op){
-            case 1:
-                 if (flagCli){
-                    system ("cls");
-                    printf ("Dados dos Clientes já importados!!!\n");
-                    printf ("<ENTER> para voltar");
-                    getch();
-                    menuBusca (); 
-                 }else{
-                  
-                    leArquivo ("CLIENTES.txt");
-                    salvaCliente ();
-                    apresenta ("Obrigado por esperar! <ENTER> voltar ao MENU BUSCA");
-                    menuBusca ();
-                 }
-                 break;
-            case 2:
-                 if (flagParc){
-                    system ("cls");
-                    printf ("Dados das Parcelas já importados!!!\n");
-                    printf ("<ENTER> para voltar");
-                    getch();
-                    menuBusca();
-                 }else{
-                  
-                    leArquivo ("PARCELAS.txt");
-                    salvaParcela ();
-                    apresenta2 ("Obrigado por esperar! <ENTER> voltar ao MENU BUSCAR");
-                    menuBusca (); 
-                 }
-                 break;
-            case 3:
-                 dadosImp (3, flagCli);
-                 mostrarCadastro ("<ENTER> para voltar ao MEU BUSCA");
-                 menuBusca ();
-                 break;
-            case 4:
-                 dadosImp (3, flagParc);
-                 mostrarParcela ("menu parcela");
-                 menuBusca ();
-                 break;
-            case 0:
-                 menuPrincipal ();
-                 break;
-                 
-     }      
-}
-//------------------------------------------------------------------------------
-void menuReceita (){
-     int op;
-
-     do {
-         fflush (stdin);
-         system ("cls");
-         printf ("MENU RECEITAS\n\n");
-         printf ("1 - Personalizado\n");
-         printf ("2 - Resumo por Banco\n");
-         printf ("0 - Menu Principal\n");
-         printf ("Escolha um opção: ");
-         scanf ("%d",&op);
-     }while (op < 0 || op >2);
-
-     switch (op){
-            case 1:
-                 dadosImp (4, flagCli);
-                 dadosImp (4, flagParc);
-
-                 break;
-            case 2:
-                 dadosImp (4, flagCli);
-                 dadosImp (4, flagParc);
-                 contaBanco ();
-                 menuReceita ();
-                 break;
-            case 0:
-                 menuPrincipal ();
-                 break;
-                 
-     } 
-}
-//------------------------------------------------------------------------------
-void personalizado (){
-     
-     printf ("TEM QUE ADAPTAR PARA A OPÇÃO DE PEGAR TODOS...\\n\n\n");
-     
-     char clienteID[5];
-     int banco;
-     int k = -1;
-     int ord, parcela;
-     
-     system ("cls");
-     do{
-        fflush (stdin);
-        printf ("Código Cliente: ");
-        gets (clienteID);
-        k = validaID (clienteID);
-        if (k == -1 || cadastro[k].status == false){
-           printf ("Cliente não cadastrado\n");
-           printf ("<ENTER> para tentar novamente\n");
-           getch ();
-           system ("cls");
-        }
-     }while (k == -1 || cadastro[k].status == false);
-     
-     do{
-        fflush (stdin);
-        printf ("Código do banco: ");
-        scanf ("%d",&banco);
-        k = validaBanco (banco);
-        if (k == -1){
-           printf ("Banco não cadastrado\n");
-           printf ("<ENTER> para tentar novamente\n");
-           getch ();
-           system ("cls");
-           printf ("Código Cliente: %s\n", clienteID);
-        }    
-     }while (k == -1); 
-     
-     do{
-        fflush (stdin);
-        printf ("Ordenar por [1]-PARCELA  [2]-VENCIMENTO: ");
-        scanf ("%d",&ord);
-        if (ord !=1 && ord !=2){
-           system ("cls");
-           printf ("Código Cliente: %s\n", clienteID);
-           printf ("Código do banco: %d\n", banco);
-        
-        }
-     }while (ord !=1 && ord !=2);
-     
-     if (ord == 1){
-        selectionNumeroPar ();
-     }else{
-        selectionVencPar ();
-     }
-     
-     do{
-        fflush (stdin);
-        printf ("Parcelas em [1]ABERTO ou [2]RECEBIDAS ou <ENTER> para ambos: ");
-        scanf ("%d",&parcela);
-        if (parcela !=1 && parcela !=2){
-           system ("cls");
-           printf ("Código Cliente: %s\n", clienteID);
-           printf ("Código do banco: %d\n", banco);
-           printf ("Ordenar por [1]-PARCELA  [2]-VENCIMENTO: %d\n",ord);
-        }
-     }while(parcela !=1 && parcela !=2);
-     
-     
-     
-     //VALIDAÇÃO SE TEM A PARCELA MAS NÃO É DO BANCO INFORMADO
-     bool j;
-     j = false;
-     j = parcelaBanco(clienteID, banco);
-     
-     clienteEUmbanco (clienteID, banco, ord, parcela, j);
-     //PASSO POR PARAMETRO
-         
 }
 //------------------------------------------------------------------------------
 bool parcelaBanco (char cli[5], int bc){
@@ -1581,36 +1857,66 @@ void clienteEUmbanco (char cli[5], int bc, int orde, int parc, bool flag){ //Ser
          }
          printf ("-----------------------------------------------------------\n");
          printf ("<ENTER> para Nova Consulta");
-         getch (); 
+         do{ //VALIDA SE A PESSOA APERTOU ENTER
+               fflush (stdin);
+               enter = getch();
+         }while (enter != 13); 
      }
      else{
          printf ("-----------------------------------------------------------\n");
          printf ("  %s: não tem parcelas no Banco (%d)\n",cadastro[k].nome,bc);
          printf ("-----------------------------------------------------------\n");
          printf ("<ENTER> para Nova Consulta");
-         getch ();
+         do{ //VALIDA SE A PESSOA APERTOU ENTER
+               fflush (stdin);
+               enter = getch();
+         }while (enter != 13);
      } 
      printf ("\n%.2f",totalCli);  
 
 }
 //------------------------------------------------------------------------------
-int validaBanco (int bc){
-     int nome[6];
-
-     nome[0] = 000;
-     nome[1] = 001;
-     nome[2] = 104;
-     nome[3] = 237;
-     nome[4] = 341;
-     nome[5] = 260;
-     for (int i=0; i<=5;i++){
-         if (bc == nome[i])
-            return 1;
+int validaBanco (int bc){   
+    
+     idBanco[0] = 000;
+     strcpy (nomeBanco[0], "CARTEIRA");
+     nomeBanco[0][8] = '\0';
+     
+     idBanco[1] = 001;
+     strcpy (nomeBanco[1], "BB");
+     nomeBanco[1][2] = '\0';
+     
+     idBanco[2] = 104;
+     strcpy (nomeBanco[2], "CAIXA");
+     nomeBanco[2][5] = '\0';
+     
+     idBanco[3] = 237;
+     strcpy (nomeBanco[3], "BRADESCO");
+     nomeBanco[3][8] = '\0';
+     
+     idBanco[4] = 260;
+     strcpy (nomeBanco[4], "NUBANK");
+     nomeBanco[4][6] = '\0';
+     
+     idBanco[5] = 341;
+     strcpy (nomeBanco[5], "ITAÚ");
+     nomeBanco[5][4] = '\0';
+     
+     for (int i=0; i<=15;i++){
+         if (bc == idBanco[i])
+            return i;
      }
      return -1;
 }
-//PROVA REAL cod:3110  ---  Banco: 104
 //------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
 void creditos (){
 
      system ("cls");
