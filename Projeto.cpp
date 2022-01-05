@@ -23,7 +23,7 @@ struct Cliente{
        bool status;
 };
 struct Parcela{
-       char idPar[10], idCli[5], venc[9], rec[9], val[9];
+       char idPar[10], idCli[5], venc[9], rec[9], val[9], charBanco[5];
        int banco;
        float valor;
        bool st;
@@ -36,8 +36,9 @@ int qtLinhas, qtLinhasParc, qtLinhasCli, ref;
 int tecla;
 bool flagCli, flagParc;
 int enter, timerMenu;
-int idBanco[15];
+char idBanco[15][5];
 char nomeBanco [20][15];
+int totalBanco;
 
 struct Cliente cadastro[SIZE_CAD];
 struct Parcela registro[SIZE_CAD];
@@ -87,10 +88,17 @@ void menuReceita ();
 void menuBusca ();
 
 void personalizado ();
-bool parcelaBanco (char cli[5], int bc);
-void clienteEUmbanco (char cli[5], int bc, int orde, int parc, bool flag);
+bool parcelaBanco (char cli[5], char bc[5]);
+void clienteEUmbanco (char cli[5], char bc[5], int orde, int parc, bool flag);
 
-int validaBanco (int bc);
+void Bancos ();
+int validaBanco (char bc[5]);
+
+void resumoSintBanco ();
+void consutaTodasParcela ();
+
+int palavraIgual (char p1[30], char p2[30]);
+
 /*Feito*/void creditos ();
 //******************XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*******************//
 
@@ -100,7 +108,10 @@ int main (){
       
     flagCli = false; 
     flagParc = false;
+    
     timerMenu = 300;
+    totalBanco = 6;
+    Bancos ();
     
     //menuPrincipal ();
     leArquivo ("CLIENTES.txt");
@@ -108,7 +119,11 @@ int main (){
     leArquivo ("PARCELAS.txt");
     salvaParcela ();
     
-    menuPrincipal ();
+    //menuPrincipal ();
+    //resumoSintBanco ();
+    
+    consutaTodasParcela ();
+    
     
     //selectionVencPar ();
     
@@ -780,7 +795,7 @@ void addParcela (){ //Para realizar a busca binaria, tem-se que descontar qtLinh
         printf ("[260] Nubank\n");
         printf ("[341] Itaú\n");
         printf ("Código Banco: ");
-        scanf ("%d",&registro[qtLinhasParc].banco);
+        scanf ("%d",&registro[qtLinhasParc].charBanco);
      }while (registro[qtLinhasParc].banco !=0 &&
       registro[qtLinhasParc].banco != 001 &&
       registro[qtLinhasParc].banco != 104 && 
@@ -788,7 +803,7 @@ void addParcela (){ //Para realizar a busca binaria, tem-se que descontar qtLinh
       registro[qtLinhasParc].banco != 260 &&
       registro[qtLinhasParc].banco != 341);
       
-      k = validaBanco (registro[qtLinhasParc].banco);
+      k = validaBanco (registro[qtLinhasParc].charBanco);
       
       system ("cls");
       printf ("Adicionar Parcelas\n\n");
@@ -1043,7 +1058,7 @@ void deletarParcela (){
          k = buscaBinaria (cod, 0);
      }
      
-     j = validaBanco (registro[k].banco); //Para buscar o nome do Banco
+     j = validaBanco (registro[k].charBanco); //Para buscar o nome do Banco
      i = validaID (registro[k].idCli); //Para buscar o nome do cliente
      
      if ((k != -1) && (registro[k].st != false)){
@@ -1171,12 +1186,56 @@ void menuReceita (){
      } 
 }
 //------------------------------------------------------------------------------
+void resumoBanco (){
+     float totalAberto[6], totalRecebido[6], totalBanco[6];
+     float totalAbertoG=0, totalRecebidoG=0, totalBancoG=0;
+     
+     for (int i=0; i<6; i++){
+         totalAberto[i] = 0;
+         totalRecebido[i] = 0;
+         totalBanco[i] = 0;
+     }    
+     for (int i = 0; i <= qtLinhasParc; i++){
+         for (int j = 0; j < 6; j++){
+             if (  (strcmp (registro[i].charBanco, idBanco[j])==0) && (registro[i].st == true)){             
+                if (strcmp(registro[i].rec, "N/D") == 0){ //Se data recebimento for NULO
+                   totalAberto[j] = totalAberto[j] + registro[i].valor;
+                   totalBanco [j] = totalBanco [j] + registro[i].valor;
+                }else{
+                   totalRecebido[j] = totalRecebido[j] + registro[i].valor;
+                   totalBanco   [j] = totalBanco   [j] + registro[i].valor;
+                } 
+             }
+         }
+     }     
+     for (int i=0; i<6; i++){
+         totalAbertoG = totalAbertoG + totalAberto[i];
+         totalRecebidoG = totalRecebidoG + totalRecebido[i];
+         totalBancoG = totalBancoG + totalBanco[i];
+     }   
+     system ("cls"); 
+     printf ("-----------------------------------------------------------\n");
+     printf ("  COD      BANCO      A RECEBER    RECEBIDO       TOTAL\n");
+     printf ("-----------------------------------------------------------\n");
+     for (int i = 0; i < 6; i++){
+         printf ("| %.3d | %10s | %10.2f | %10.2f | %10.2f |\n", idBanco[i], nomeBanco[i], totalAberto[i], totalRecebido[i], totalBanco[i]);    
+     }
+     printf ("-----------------------------------------------------------\n");
+     printf ("             TOTAL | %10.2f | %10.2f | %10.2f |\n", totalAbertoG, totalRecebidoG, totalBancoG);
+     printf ("-----------------------------------------------------------\n");
+     printf ("<ENTER> para voltar MENU RECEITAS");
+     do{ //VALIDA SE A PESSOA APERTOU ENTER
+         fflush (stdin);
+         enter = getch();
+     }while (enter != 13);
+}
+//------------------------------------------------------------------------------
 void personalizado (){
      
      printf ("TEM QUE ADAPTAR PARA A OPÇÃO DE PEGAR TODOS...\\n\n\n");
      
      char clienteID[5];
-     int banco;
+    char banco[5];
      int k = -1;
      int ord, parcela;
      
@@ -1462,6 +1521,7 @@ void salvaParcela (){
          registro[i].valor = atof (registro[i].val);  //atof Função converte CHAR para FLOAT.
          
          divisao (i);
+         strcpy (registro[i].charBanco, tmp);
          bc = strtol (tmp, NULL, 10); //FUNÇÃO PADRÃO QUE CONVERTE char p/ int
          registro[i].banco = bc;
          
@@ -1471,6 +1531,7 @@ void salvaParcela (){
      flagParc = true;        //Significa que já realizou a importação das PARCELA...
 }
 //------------------------------------------------------------------------------
+
 void selectionNome (){ //Organiza por nome do cliente
      struct Cliente tmpCad;
      
@@ -1670,86 +1731,6 @@ void menuResumidoPag (float a, float r, float t){
      getch ();     
 }*/
 //------------------------------------------------------------------------------
-void resumoBanco (){
-     float totalCarteiraA = 0, totalCarteiraR = 0, totalCarteiraG = 0;
-     float totalBbA = 0, totalBbR = 0, totalBbG = 0;
-     float totalCxA = 0, totalCxR = 0, totalCxG = 0;
-     float totalBdA = 0, totalBdR = 0, totalBdG = 0;
-     float totalNuA = 0, totalNuR = 0, totalNuG = 0;
-     float totalItA = 0, totalItR = 0, totalItG = 0;
-     float totalAberto, totalRecebido, totalBanco;
-     
-     for (int i = 0; i <= qtLinhasParc; i++){
-         //CARTEIRA (0)
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 0) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
-            totalCarteiraA = totalCarteiraA + registro[i].valor;      //Para TOTAL ABERTO CARTEIRA
-         if (registro[i].banco == 0) //Pega todos os valores da CCARTEIRA
-            totalCarteiraG = totalCarteiraG + registro[i].valor;//Pega todos os valores da CARTEIRA.
-         
-         //printf ("%.2f\n",registro[i].valor);
-        //getch ();
-            
-         //BANCO DO BRASIL (001)   
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 001) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
-            totalBbA = totalBbA + registro[i].valor;      //Para TOTAL ABERTO BANCO DO BRASIL
-         if ((registro[i].banco == 001) && (registro[i].st == true)) //Pega todos os valores do BANCO DO BRASIL CCARTEIRA
-            totalBbG = totalBbG + registro[i].valor;
-            
-         //CAIXA ECÔNOMICA FERERAL (104)   
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 104) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
-            totalCxA = totalCxA + registro[i].valor;      //Para TOTAL ABERTO CAIXA ECÔNOMICA FERERAL
-         if ((registro[i].banco == 104) && (registro[i].st == true)) //Pega todos os valores da CAIXA ECÔNOMICA FERERAL
-            totalCxG = totalCxG + registro[i].valor;
-            
-         //BRADESCO (237)  
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 237) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
-            totalBdA = totalBdA + registro[i].valor;      //Para TOTAL ABERTO BRADESCO
-         if ((registro[i].banco == 237) && (registro[i].st == true)) //Pega todos os valores do BRADESCO
-            totalBdG = totalBdG + registro[i].valor;
-            
-         //NUBANCK (260)  
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 260) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
-            totalNuA = totalNuA + registro[i].valor;      //Para TOTAL ABERTO NUBANCK
-         if ((registro[i].banco == 260) && (registro[i].st == true)) //Pega todos os valores do NUBANCK
-            totalNuG = totalNuG + registro[i].valor;
-            
-         //ITAÚ (341)  
-         if ((strcmp (registro[i].rec, "N/D") == 0) && (registro[i].banco == 341) && (registro[i].st == true)) //Pega todos os valores da CCARTEIRA em ABERTO
-            totalItA = totalItA + registro[i].valor;      //Para TOTAL ABERTO ITAÚ
-         if ((registro[i].banco == 341) && (registro[i].st == true)) //Pega todos os valores do ITAÚ
-            totalItG = totalItG + registro[i].valor;
-     }
-     //Conta para achar o Total Recebido por Banco
-     totalCarteiraR = totalCarteiraG - totalCarteiraA;
-     totalBbR = totalBbG - totalBbA;
-     totalCxR = totalCxG - totalCxA;
-     totalBbR = totalBdG - totalBdA;
-     totalNuR = totalNuG - totalNuA;
-     totalItR = totalItG - totalItA;
-     
-     totalAberto   = totalCarteiraA + totalBbA + totalCxA + totalBdA + totalNuA + totalItA;
-     totalRecebido = totalCarteiraR + totalBbR + totalCxR + totalBdR + totalNuR + totalItR;
-     totalBanco    = totalAberto + totalRecebido;
-     
-     system ("cls"); 
-     printf ("------------------------------------------------------------------\n");
-     printf ("  COD      BANCO         A RECEBER      RECEBIDO       TOTAL\n");
-     printf ("------------------------------------------------------------------\n");
-     printf ("| 000 |   Carteira   |    %.2f   |   %.2f  |    %.2f  |\n", totalCarteiraA, totalCarteiraR, totalCarteiraG);
-     printf ("| 001 |      BB      |    %.2f    |    %.2f    |    %.2f   |\n", totalBbA, totalBbR, totalBbG);
-     printf ("| 104 |    CAIXA     |    %.2f    |    %.2f    |    %.2f   |\n", totalCxA, totalCxR, totalCxG);
-     printf ("| 237 |   BRADESCO   |    %.2f    |    %.2f    |    %.2f   |\n", totalBdA, totalBdR, totalBdG);
-     printf ("| 341 |     ITAÚ     |    %.2f    |    %.2f    |    %.2f   |\n", totalItA, totalItR, totalItG);
-     printf ("| 260 |    NUBANK    |    %.2f    |    %.2f    |    %.2f   |\n", totalNuA, totalNuR, totalNuG);
-     printf ("------------------------------------------------------------------\n");
-     printf ("           TOTAL          %.2f       %.2f       %.2f \n", totalAberto, totalRecebido, totalBanco);
-     printf ("<ENTER> para voltar MENU RECEITAS");
-     do{ //VALIDA SE A PESSOA APERTOU ENTER
-            fflush (stdin);
-            enter = getch();
-     }while (enter != 13);   
-}
-//------------------------------------------------------------------------------
 void receitaBancoCliente (int tipo){   //Tipo 1: Banco - Tipo 2: Cliente
      int cod, cont=1, k, parada;
      char cliente[5];
@@ -1823,9 +1804,9 @@ void receitaBancoCliente (int tipo){   //Tipo 1: Banco - Tipo 2: Cliente
      }     
 }
 //------------------------------------------------------------------------------
-bool parcelaBanco (char cli[5], int bc){
+bool parcelaBanco (char cli[5], char bc[5]){
     for (int i=0; i<=qtLinhasParc; i++){
-        if (strcmp(cli, registro[i].idCli) == 0 && bc == registro[i].banco)
+        if ( (strcmp(cli, registro[i].idCli) == 0 ) && ( strcmp (bc, registro[i].charBanco) == 0)  )
            return true;
     }
     return false;
@@ -1833,7 +1814,7 @@ bool parcelaBanco (char cli[5], int bc){
 //Caso retorne FALSE significa que não esse cliente NÃO TEM PARCELA NESTE BANCO.
 }
 //------------------------------------------------------------------------------
-void clienteEUmbanco (char cli[5], int bc, int orde, int parc, bool flag){ //Serve para imprimir dados de parcela de um cliente de um banco especifico.
+void clienteEUmbanco (char cli[5], char bc[5], int orde, int parc, bool flag){ //Serve para imprimir dados de parcela de um cliente de um banco especifico.
      float totalCli;
      float cont=0;
      int k;
@@ -1849,7 +1830,7 @@ void clienteEUmbanco (char cli[5], int bc, int orde, int parc, bool flag){ //Ser
          printf ("  Parcela    ID    Vencimento Recebimento    Valor     BC \n");
          printf ("-----------------------------------------------------------\n");
          for (int i=0; i<=qtLinhasParc; i++){
-             if (strcmp(cli, registro[i].idCli) == 0 && bc == registro[i].banco){
+             if ( (strcmp(cli, registro[i].idCli) == 0) && (strcmp (bc, registro[i].charBanco) == 0 ) ){
                 //totalCli = totalCli + registro[i].valor; //Pega todos os valores independente do BANCO    
                 printf("%9s | %4s | %9s | %9s | %9s | %.3d\n",registro[i].idPar, registro[i].idCli, registro[i].venc, registro[i].rec, registro[i].val, registro[i].banco);
                 Sleep (100); 
@@ -1876,43 +1857,394 @@ void clienteEUmbanco (char cli[5], int bc, int orde, int parc, bool flag){ //Ser
 
 }
 //------------------------------------------------------------------------------
-int validaBanco (int bc){   
+void Bancos (){   
     
-     idBanco[0] = 000;
+     strcpy (idBanco[0], "0");
+     idBanco[0][3] = '\0';
      strcpy (nomeBanco[0], "CARTEIRA");
      nomeBanco[0][8] = '\0';
      
-     idBanco[1] = 001;
+     strcpy (idBanco[1], "001");
+     idBanco[1][3] = '\0';
      strcpy (nomeBanco[1], "BB");
      nomeBanco[1][2] = '\0';
      
-     idBanco[2] = 104;
+     strcpy (idBanco[2], "104");
+     idBanco[2][3] = '\0';
      strcpy (nomeBanco[2], "CAIXA");
      nomeBanco[2][5] = '\0';
      
-     idBanco[3] = 237;
+     strcpy (idBanco[3], "237");
+     idBanco[3][3] = '\0';
      strcpy (nomeBanco[3], "BRADESCO");
      nomeBanco[3][8] = '\0';
      
-     idBanco[4] = 260;
+     strcpy (idBanco[4], "260");
+     idBanco[4][3] = '\0';
      strcpy (nomeBanco[4], "NUBANK");
      nomeBanco[4][6] = '\0';
      
-     idBanco[5] = 341;
+     strcpy (idBanco[5], "341");
+     idBanco[5][3] = '\0';
      strcpy (nomeBanco[5], "ITAÚ");
      nomeBanco[5][4] = '\0';
+}
+//------------------------------------------------------------------------------
+int validaBanco (char bc[5]){ 
+     for (int i=0; i<= totalBanco; i++){
+     //printf ("%s\n", idBanco[i]);
+     //system ("pause");
+     }
      
-     for (int i=0; i<=15;i++){
-         if (bc == idBanco[i])
+     for (int i=0; i<=totalBanco; i++){
+         if (strcmp (bc, idBanco[i]) == 0)
             return i;
      }
      return -1;
 }
 //------------------------------------------------------------------------------
+void resumoSintBanco (){
+     char todosBancos[6], codBanco[5];
+     int codBancoInt;
+     int parcela, ordem;
+     int k=-1;
+     
+     //ENTRADA DO CÓDIGO DO BANCO A SER SELECIONADO
+     do{
+        system ("cls");
+        printf ("Código do Banco ou <ENTER> Para todos: ");
+        gets (codBanco);
+        if (codBanco[0] == '\0'){ 
+           k = -10;
+           strcpy (todosBancos, "TODOS");
+           todosBancos[5] = '\0';
+        }else{
+           k = validaBanco(codBanco); //Recebe a posição do banco no vetor idBanco ou nomeBanco
+           codBancoInt = strtol (idBanco[k], NULL, 10); //TRAZ CODbANCO COMO int.
+        }
+     }while (k == -1);
+     
+     //SITUAÇÃO DA PARCELA A SER SELECIONADA
+     do{
+        system ("cls");
+        if (k == -10){
+           printf ("Código do Banco ou <ENTER> Para todos: %s\n", "TODOS");
+        }else{
+           printf ("Código do Banco ou <ENTER> Para todos: %s\n", nomeBanco[k]);
+        } 
+         
+        printf ("Parcelas em [1]Aberto ou [2]Recebidas ou <ENTER>Todas: ");
+        enter = getch();
+        parcela = enter-48;
+        if (parcela>=0 && parcela<10){
+           printf ("%d\n",enter-48);
+           Sleep (timerMenu);
+        } 
+     }while (parcela !=  1 && parcela != 2 && enter != 13);
+     
+     //TIPO DE ORDENAÇÃO
+     do{
+        system ("cls");
+        if (k == -10){
+           printf ("Código do Banco ou <ENTER> Para todos: %s\n", "TODOS");
+        }else{
+           printf ("Código do Banco ou <ENTER> Para todos: %s\n", nomeBanco[k]);
+        }
+        if (enter == 13){ 
+           printf ("Parcelas em [1]Aberto ou [2]Recebidas ou <ENTER>Todas: %s\n","TODOS");
+        }else{
+           if (parcela == 1){
+              printf ("Parcelas em [1]Aberto ou [2]Recebidas ou <ENTER>Todas: %s\n", "PARCELAS EM ABERTO");
+           }else{
+              printf ("Parcelas em [1]Aberto ou [2]Recebidas ou <ENTER>Todas: %s\n", "PARCELAS RECEBIDAS");   
+           }   
+        } 
+
+        printf ("Ordem por [1]Código ou [2]Nome: ");
+        scanf ("%d", &ordem);
+     }while (ordem != 1 && ordem != 2);
+     
+     if (ordem == 1){
+        selectionIdCliente ();
+     }else{
+        selectionNome ();   
+     }
+
+     
+     float totalAreceber = 0;
+     float totalGeral = 0;
+     for (int i=0; i<= qtLinhasParc; i++){
+         if ( ((strcmp(todosBancos, "TODOS") == 0) || (codBancoInt == registro[i].banco))  &&  (registro[i].st == true)){
+            if ( ( (parcela == 1) && (strcmp (registro[i].rec, "N/D")==0) )  ||  ( (parcela == 2)  && ( (strcmp (registro[i].rec, "N/D")>0  || strcmp (registro[i].rec, "N/D")<0)) ) || (parcela == -35)  )
+               totalGeral = totalGeral + registro[i].valor; //PARA FAZER O % DE CADA CLIENTE  
+         }   
+     }
+     printf ("totalGeral: %f\n",totalGeral);
+     system ("pause");
+     float totalCliente;
+     char nome[30];
+     char codCliente[5];
+     bool flagCliente;
+     int idCadCli, idRegCli;
+     int linha = 0;
+     int s;
+     
+     system ("cls");
+     for (int i=0; i<=qtLinhasCli; i++){
+         totalCliente = 0;
+         if (cadastro[i].status == true){
+            strcpy (nome, cadastro[i].nome);
+            strcpy (codCliente, cadastro[i].id);
+            
+            for (int j=0; j<= qtLinhasParc; j++){
+                flagCliente = true;
+                //codBancoInt = strtol (codBanco, NULL, 10);    // converte char p/ int
+                
+                if ( (parcela != -35) && (codBancoInt != registro[j].banco) )
+                   flagCliente = false;
+                   
+                s = palavraIgual (registro[j].rec, "N/D"); //s=1 (palavras iguais)  s=0 (palavras diferentes)
+                //PARCELA = 1 (ABERTO)  PARCELA = 2 (RECEBIDO)
+                if ( (parcela == 1) && ( s == 0 ) ){
+                   flagCliente = false; //PARCELA NÃO ESTA ABERTA (JÁ FOI RECEBIDA)
+                   
+                if ( (parcela == 2) && ( s == 1 ) ){
+                   flagCliente == false; //PARCELA ESTA EM ABERTO (NÃO FOI RECEBIDA)
+                   
+                idCadCli = strtol (codCliente, NULL, 10);     //Convertr CHAR p/ INT
+                idRegCli = strtol (registro[j].idCli, NULL, 10); //Convertr CHAR p/ INT
+                if ( (idCadCli != idRegCli) || (registro[j].st == false) )
+                   flagCliente = false;
+                   
+                if (flagCliente == true)
+                   totalCliente = totalCliente + registro[j].valor;
+            }
+         }
+         float porcentagem;
+         char bancoPesq[15];
+         if (totalCliente > 0){
+            if (strcmp(todosBancos, "TODOS")==0){
+               strcpy(bancoPesq, "TODOS");
+            }else{
+               strcpy(bancoPesq, nomeBanco[k]);   
+            }
+            if (linha==0){
+            if (parcela == 1){
+               printf ("Resumo por Cliente. Banco:%s  Situação:%s\n",bancoPesq, "EM ABERTO");
+            }else{
+               printf ("Resumo por Cliente. Banco:%s  Situação:%s\n",bancoPesq, "RECEBIDO");
+            }
+            printf ("-------------------------------------------------------\n");
+            printf ("  ID              Cliente             TOTAL       %%\n");
+            printf ("-------------------------------------------------------\n");
+            }//printf ("| %.3d | %10s | %10.2f | %10.2f | %10.2f |\n",
+            porcentagem = (totalCliente*100)/totalGeral;
+            printf ("| %4s | %25s | %8.2f | %5.2f |\n", codCliente, nome, totalCliente, porcentagem);
+            //Sleep (300);
+            linha = linha +1;
+         }
+         if (linha==24){
+            printf ("---------------------------------------------------------\n");
+            printf ("<ENTER> para continuar");
+            linha = 0;
+            do{
+               enter = getch();  
+            }while (enter != 13); 
+            system ("cls");
+         }
+     }
+     printf ("---------------------------------------------------------\n");
+     printf ("                              TOTAL: %8.2f\n",totalGeral);                  
+     system ("Pause");
 
 
+}
 
+//------------------------------------------------------------------------------
+void consutaTodasParcela (){
+     char codCli[5], codBan[5], parcela[2];
+     char nomeCli[30], nomeBan[30], tipoParc[5];
+     int ordem;
+     int k, j;
+     
+     if (qtLinhasParc > 0 && qtLinhasCli > 0){
+        //PEGAR O CÓDIGO DO CLIENTE
+        do{
+           system ("cls");
+           printf ("Consulta por  Parcelas\n\n");
+           printf ("Código do Cliente ou <ENTER> TODOS: ");
+           gets (codCli);
+           k = validaID (codCli);
+           if (k == -1 && codCli[0] != '\0'){
+              printf ("Cliente não cadastrado\n");
+              printf ("<ENTER> tentar novamente");
+              do{
+                 enter = getch();
+              }while (enter != 13);
+           }
+              
+        }while (k == -1 && codCli[0] != '\0');
+        if (codCli[0] == '\0'){
+           strcpy (nomeCli, "TODOS");
+           nomeCli[5] = '\0';
+        }else{
+           strcpy (nomeCli, cadastro[k].nome);
+           nomeCli[strlen(cadastro[k].nome)] = '\0'; 
+        }
+        
+        //PEGAR O NOME DO BANCO
+        do{
+           system ("cls");
+           printf ("Consulta por  Parcelas\n\n");
+           printf ("Código do Cliente ou <ENTER> TODOS: %s\n",nomeCli);
+           
+           printf ("Código Banco ou <ENTER> TODOS: ");
+           gets (codBan);
+           j = validaBanco (codBan);
+           if (j == -1 && codBan[0] != '\0'){
+              printf ("Banco não cadastrado\n");
+              printf ("<ENTER> tentar novamente");
+              do{
+                 enter = getch();
+              }while (enter != 13);
+           }
+        }while (j == -1 && codBan[0] != '\0');
+        if (codBan[0] == '\0'){
+           strcpy (nomeBan, "TODOS");
+           nomeBan[5] = '\0';
+        }else{
+           strcpy (nomeBan, nomeBanco[j]);
+           nomeBan[strlen(nomeBanco[j])] = '\0';
+        }
+        
+        //PEGAR O TIPO DE RECEITA
+        do{
+           system ("cls");
+           printf ("Consulta por  Parcelas\n\n");
+           printf ("Código do Cliente ou <ENTER> TODOS: %s\n",nomeCli);
+           printf ("Código Banco ou <ENTER> TODOS: %s\n",nomeBan);
+           
+           printf ("Parcelas [1] Abertas ou [2] Recebidas ou <ENTER> Ambas: ");
+           gets (parcela);
+           if (parcela[0] != '1' && parcela[0] != '2' && parcela[0] != '\0'){
+              printf ("Banco não cadastrado\n");
+              printf ("<ENTER> tentar novamente");
+              do{
+                 enter = getch();
+              }while (enter != 13);
+           }
+        }while (parcela[0] != '1' && parcela[0] != '2' && parcela[0] != '\0');
+        if (parcela[0] == '\0'){
+           strcpy (tipoParc, "AMBAS");
+           tipoParc[5] = '\0';
+        }else{
+           strcpy (tipoParc, parcela);
+           tipoParc[strlen(parcela)] = '\0';
+        }
+        
+        //TIPO DE ORDENAÇÃO
+        do{
+           system ("cls");
+           printf ("Consulta por  Parcelas\n\n");
+           printf ("Código do Cliente ou <ENTER> TODOS: %s\n",nomeCli);
+           printf ("Código Banco ou <ENTER> TODOS: %s\n",nomeBan);
+           printf ("Parcelas [1] Abertas ou [2] Recebidas ou <ENTER> Ambas: %s\n",tipoParc);
+           
+           printf ("Ordem [1]-Parcela  [2]-Vencimento: ");
+           scanf ("%d", &ordem);
+            if (ordem != 1 && ordem != 2){
+              printf ("<ENTER> tentar novamente");
+              do{
+                 enter = getch();
+              }while (enter != 13);
+           }
+        }while (ordem != 1 && ordem != 2);
+        //ORDENAÇÃO
+        if (ordem == 1){
+           selectionNumeroPar ();
+        }else{
+           selectionVencPar ();   
+        }
+        
+        float totalCliente = 0;
+        int linha = 0;
+        bool flag;
+        int P, Q;
+        system ("cls");
+        for (int i=0; i<=qtLinhasParc; i++){
+            flag = true;
+            
+            P = palavraIgual (nomeCli,"TODOS");
+            Q = palavraIgual (codCli, registro[i].idCli);
+            if ( (P == 0) && (Q == 0) )
+               flag = false;
+            
+            P = palavraIgual (nomeBan, "TODOS");
+            Q = palavraIgual (codBan, registro[i].charBanco);
+            if ((P==0) && (Q == 0))
+               flag = false;
+            
+            P = palavraIgual (registro[i].rec, "N/D");
+            if ((parcela[0]=='1') && (P==1))
+               flag = false;
+            
+            P = palavraIgual (registro[i].rec, "N/D");
+            if ((parcela[0]=='2' && (P==0)))
+               flag = false;
+            
+            if ((flag==true) && (registro[i].st == true)){
+               if (linha==0){
+                  if (parcela[0]=='1') printf ("Resumo por Cliente                       Banco: %s                      Situação: %s\n",nomeBan, "RECEBIDO");
+                  if (parcela[0]=='2') printf ("Resumo por Cliente                       Banco: %s                      Situação: %s\n",nomeBan, "A RECEBER");
+                  if (parcela[0]=='\0')printf ("Resumo por Cliente                       Banco: %s                      Situação: %s\n",nomeBan, tipoParc);
+                  printf ("----------------------------------------------------------------------------------------------\n");
+                  printf ("   ID              CLIENTE           PARCELA      VENC        REC       VALOR        BANCO \n");
+                  printf ("----------------------------------------------------------------------------------------------\n");
+               }
+               printf ("| %4s | %25s | %s | %9s | %9s | %8.2f | %10s |\n", registro[i].idCli, cadastro[validaID(registro[i].idCli)].nome, registro[i].idPar, registro[i].venc, registro[i].rec, registro[i].valor, nomeBanco[validaBanco(registro[i].charBanco)] );                                     
+               Sleep (50);
+               linha++;
+               totalCliente = totalCliente + registro[i].valor;
+               if (linha == 24){
+                  printf ("----------------------------------------------------------------------------------------------\n");
+                  printf ("<ENTER> para continuar");
+                  do{
+                     enter = getch();
+                  }while(enter != 13);
+                  linha = 0;
+                  system ("cls");                  
+               }
+            }
+        }
+        printf ("----------------------------------------------------------------------------------------------\n");
+        printf ("                                                                TOTAL: %8.2f\n", totalCliente);
+        printf ("<ENTER> para MENU RECEITAS");
+        do{
+           enter = getch();
+        }while(enter != 13);
+     
+     }else{
+           printf ("TABELA DE PARCELAS ESTÁ SEM DADOS <ENTER>");
+           do{
+              enter = getch();
+           }while(enter != 13);
+     }
+}
+//------------------------------------------------------------------------------
+int palavraIgual (char p1[30], char p2[30]){
+    int i=0;
+    
+    while (p1[i] == p2[i] && p1[i] != '\0' && p2[i] != '\0'){
+          i++;     
+    }
+    if (p1[i] == '\0' && p2[i] == '\0'){
+       return 1; //String IGUAIS
+    }else{
+       return 0; //String DIFERENTES  
+    }
+}
 
+//------------------------------------------------------------------------------
 
 
 
