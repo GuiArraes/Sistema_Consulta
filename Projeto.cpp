@@ -8,6 +8,13 @@
 
 #define SIZE_CAD 200
 
+/*
+  ACADêMICOS:                               RA:
+             Ana Elisa Tubino                  21097708-2
+             Guilherme Andrade Costa Arraes    21032425-2
+             Tiago Freire                      21129172-2
+*/
+
 struct Cliente{
        char id[5], nome[30], cidade[30], UF[3], ident[25];  
        bool status;
@@ -77,6 +84,7 @@ void maiusc (char palavra[30]);
 int palavraIgual (char p1[30], char p2[30]);
 int buscaBinaria (char pesquisa[5], int tipo);
 void creditos ();
+void notaDevs ();
 //******************XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*******************//
 //-----------------------------PROGRAMA PRINCIPAL-----------------------------//
 int main (){
@@ -100,20 +108,20 @@ void menuPrincipal (){
     
     do{
         system ("cls");
-        printf ("Falta fazer a validação de deletar parcela...\n");
         printf ("MENU PRINCIPAL\n\n");
         printf ("  1  - Menu Cliente\n");
         printf ("  2  - Menu Parcelas\n");
         printf ("  3  - Menu Busca\n");
         printf ("  4  - Menu Consulta\n");
         printf ("  5  - Importar Clientes/Parcelas\n");
+        printf ("  6  - Nota dos Desenvolvedores\n");
         printf ("  0  - Créditos\n");
         printf (" ESC - Sair\n");
         printf (" Escolha uma opção: ");
         op = getch ();
         if (op-48>=0 && op-48<=9) printf ("%d",op-48);
         Sleep (timerMenu);  
-    }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 53 && op != 48 && op != 27);
+    }while (op != 49 && op != 50 && op != 51 && op != 52 && op != 53 && op != 54 && op != 48 && op != 27);
     
     switch (op){
            case 49: 
@@ -130,6 +138,10 @@ void menuPrincipal (){
                 break;
            case 53:
                 imporClieParc ();
+                menuPrincipal ();
+                break;
+           case 54:
+                notaDevs ();
                 menuPrincipal ();
                 break;
            case 48:
@@ -1201,7 +1213,7 @@ void resumoBanco (){
      printf ("  COD          BANCO      A RECEBER    RECEBIDO      TOTAL\n");
      printf ("---------------------------------------------------------------\n");
      for (int i = 0; i < 6; i++){
-         printf ("| %.3d | %10s | %10.2f | %10.2f | %10.2f |\n", idBanco[i], nomeBanco[i], totalAberto[i], totalRecebido[i], totalBanco[i]);    
+         printf ("| %4s | %10s | %10.2f | %10.2f | %10.2f |\n", idBanco[i], nomeBanco[i], totalAberto[i], totalRecebido[i], totalBanco[i]);    
      }
      printf ("---------------------------------------------------------------\n");
      printf ("                 TOTAL | %10.2f | %10.2f | %10.2f |\n", totalAbertoG, totalRecebidoG, totalBancoG);
@@ -1603,7 +1615,7 @@ void leArquivo(char nomeArq[15]){
       qtLinhas=0;
       while (!feof(arq))
       {
-          result = fgets(linha[qtLinhas], 200, arq);  // o 'fgets' le ate 99 caracteres ou ate o '\n'
+          result = fgets(linha[qtLinhas], 200, arq);  // o 'fgets' le ate 199 caracteres ou ate o '\n'
           if (linha[qtLinhas][strlen(linha[qtLinhas])-1]=='\n')
                 linha[qtLinhas][strlen(linha[qtLinhas])-1]='\0'; //caso o ultimo caracter seja /n, sera substituido por /0 (fin de string)
     	  qtLinhas++;   
@@ -1906,8 +1918,8 @@ void selectionVencPar (){ //Organiza por vencimento da parcela
 bool validaDate (char data[7]){
      char dia[3], mes[3], ano[5];
      int nDia, nMes, nAno;
-                                             //       01234567   0123456789 
-     for (int i=0; i<= strlen(data); i++){  //    Ex: 17/01/94   17/01/1994
+                                             //       01234567     0123456789 
+     for (int i=0; i<= strlen(data); i++){  //    Ex: 17/01/94 ou  17.01.1994
          if (data[i] != '/' || data[i] != '.' && i<=1){
             dia[i] = data[i];   
          }
@@ -2076,4 +2088,38 @@ void creditos (){
      printf ("*              Guilherme Arraes                Product Owner e Dev *\n");
      printf ("*              Tiago Freire                    UI/UX Design  e Dev *\n");
      printf ("*--------------------------xxxxxxxxxxxxxxxx------------------------*\n");
+}
+//------------------------------------------------------------------------------
+void notaDevs (){
+     system ("cls");
+     printf ("*-------------------------------------------------------------------------------------------------------------------*\n");                                                                 
+     printf ("                                                     Lições Aprendida\n");
+     printf ("*-------------------------------------------------------------------------------------------------------------------*\n");
+     printf (" DESENVOLVEDOR(A)  |       FUNÇÃO       |        O QUE APRENDEU?         |                MAIOR DIFICULDADE?\n"); 
+     printf ("---------------------------------------------------------------------------------------------------------------------\n"); 
+     printf ("                   |                    |  Aplicar ordenação em C        |   Problemas em seguir um padrão do código\n");
+     printf (" Ana Elisa Tubino  |    Srum Master     |  Structs                       |   Dificuldade na manipulação de String\n");
+     printf ("                   |                    |  Trabalhar melhor em equipe    |\n");
+     printf ("---------------------------------------------------------------------------------------------------------------------\n"); 
+     printf ("                   |                    |                                |   Delegar tarefas e cobralas\n");
+     printf (" Guilherme Arraes  |    Product Owner   |  Manipular melhor Strings      |   Dificuldade na manipulação de String\n");
+     printf ("                   |                    |  Trabalhar melhor em equipe    |   Problemas em seguir um padrão do código\n");
+     printf ("                   |                    |                                |   Documentar as tarefas (não realizado)\n");
+     printf ("---------------------------------------------------------------------------------------------------------------------\n");
+     printf ("                   |                    |  Structs                       |   Problemas em seguir um padrão do código\n");
+     printf (" Tiago Freire      |    UI/UX Design    |  Trabalhar melhor em equipe    |   Dificuldade na manipulação de String\n");
+     printf ("                   |                    |                                |\n");
+     printf ("---------------------------------------------------------------------------------------------------------------------\n");
+     
+     printf ("\n\n*------------------------------------------------------------------------*\n");
+     printf ("                         DESENVOLVIMENTO DO PROJETO\n");
+     printf ("*------------------------------------------------------------------------*\n");
+     printf (" Reuniões todas as Quintas -> Desenvolvimento conjunto\n");
+     printf ("                           -> Estabelecer entregas para próxima semana\n");
+     printf (" Reunião Sabado ou Domingo -> Desenvolvimento conjunto para tirar dúvidas\n");
+     printf ("--------------------------------------------------------------------------\n");
+     printf ("<ENTER> voltar MENU PRINCIPAL");
+     do{
+        enter = getch();
+     }while (enter != 13); 
 }
